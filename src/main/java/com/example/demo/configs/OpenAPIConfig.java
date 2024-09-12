@@ -25,10 +25,10 @@ import java.util.List;
 @Configuration
 public class OpenAPIConfig {
 
-    @Value("${jewelryShop.openapi.dev-url}")
+    @Value("${uit-app.openapi.dev-url}")
     private String devUrl;
 
-    @Value("${jewelryShop.openapi.prod-url}")
+    @Value("${uit-app.openapi.prod-url}")
     private String prodUrl;
 
     @Bean
