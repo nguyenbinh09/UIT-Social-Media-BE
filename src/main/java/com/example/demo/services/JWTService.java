@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -19,7 +21,7 @@ public class JWTService {
     @Value("${security.jwt.secret-key}")
     private String secretKey;
     @Value("${security.jwt.expiration-time}")
-    private long jwtExpiration;
+    private Long jwtExpiration;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -44,11 +46,11 @@ public class JWTService {
 
     public String buildToken(HashMap<String, Object> extraClaims, UserDetails userDetails, long expirationTime) {
         return Jwts.builder()
-                .claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(getSignInKey())
+                .setClaims(extraClaims)
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -66,7 +68,12 @@ public class JWTService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token).getPayload();
+        return Jwts
+                .parserBuilder()
+                .setSigningKey(getSignInKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private SecretKey getSignInKey() {

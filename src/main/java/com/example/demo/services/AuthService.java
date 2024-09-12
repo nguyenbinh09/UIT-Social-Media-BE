@@ -38,7 +38,7 @@ public class AuthService {
             throw new RuntimeException("User already exists");
         }
         List<Role> roles = new ArrayList<>();
-        Role userRole = roleRepository.findByName("USER").get();
+        Role userRole = roleRepository.findByName("ROLE_USER").get();
         roles.add(userRole);
         user.setRoles(roles);
         User savedUser = userRepository.save(user);
