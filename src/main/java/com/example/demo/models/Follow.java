@@ -6,16 +6,19 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-@EqualsAndHashCode(callSuper = false)
-@Entity
-@Table(name = "roles")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class Role extends BaseModel {
+@NoArgsConstructor
+@Entity
+@Table(name = "follows")
+@EqualsAndHashCode(callSuper = true)
+public class Follow extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "follower_id")
+    private String followerId;
+    @Column(name = "followed_id")
+    private String followedId;
+
 }

@@ -23,21 +23,21 @@ public abstract class BaseModel {
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreatedDate
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     @LastModifiedDate
     @Temporal(TemporalType.TIMESTAMP)
-    private LocalDateTime updated_at;
+    private LocalDateTime updatedAt;
 
     @Column(name = "created_by")
     @CreatedBy
-    private String created_by;
+    private String createdBy;
 
     @Column(name = "updated_by")
     @LastModifiedBy
-    private String updated_by;
+    private String updatedBy;
 
     @Column(name = "is_deleted")
-    private Boolean is_deleted = false;
+    private Boolean isDeleted = false;
 }
