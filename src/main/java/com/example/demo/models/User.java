@@ -36,6 +36,12 @@ public class User extends BaseModel implements UserDetails {
             inverseJoinColumns = {@JoinColumn(name = "role_id")})
     private List<Role> roles = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> posts = new ArrayList<>();
+
     public User(String username, String password, String email) {
         this.username = username;
         this.password = password;

@@ -19,7 +19,7 @@ public class FirebaseService {
             // Push post notification to each follower in Firebase
             firebaseDatabase.child("feeds").child(followerId).child(post.getId().toString())
                     .setValueAsync(Map.of(
-                            "user_id", post.getUserId(),
+                            "user_id", post.getUser().getId(),
                             "title", post.getTitle(),
                             "content", post.getTextContent(),
                             "timestamp", post.getCreatedAt().toEpochSecond(ZoneOffset.UTC)
