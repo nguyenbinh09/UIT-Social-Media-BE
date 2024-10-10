@@ -39,10 +39,12 @@ public class PostService {
 
 
     public ResponseEntity<?> createPost(CreatePostRequest postRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
         Post post = new Post();
         post.setTitle(postRequest.getTitle());
         post.setTextContent(postRequest.getTextContent());
-        post.setUserId(postRequest.getUserId());
+        post.setUser(currentUser);
         postReposiroty.save(post);
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(postRequest.getUserId());

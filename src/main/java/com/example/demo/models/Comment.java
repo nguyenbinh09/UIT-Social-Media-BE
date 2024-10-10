@@ -10,20 +10,24 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "posts")
+@Table(name = "comments")
 @EqualsAndHashCode(callSuper = true)
-public class Post extends BaseModel {
+public class Comment extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "text_content")
-    private String textContent;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "comment_id")
     private User user;
 
-    @Column(name = "title")
-    private String title;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
+
+    @Column(name = "parent_id")
+    private String parentId;
+
+    @Column(name = "text_content")
+    private String textContent;
 }
