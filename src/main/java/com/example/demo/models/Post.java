@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.enums.Privacy;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,4 +27,10 @@ public class Post extends BaseModel {
 
     @Column(name = "title")
     private String title;
+
+    @Column(name = "privacy")
+    @Enumerated(EnumType.STRING)
+    private Privacy privacy;
 }
+
+

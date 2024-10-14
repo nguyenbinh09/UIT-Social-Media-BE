@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.LoginUserRequest;
 import com.example.demo.dtos.requests.RegisterUserRequest;
 import com.example.demo.dtos.responses.AuthResponse;
+import com.example.demo.enums.RoleName;
 import com.example.demo.models.Role;
 import com.example.demo.models.User;
 import com.example.demo.repositories.RoleRepository;
@@ -37,12 +38,21 @@ public class AuthService {
         if (userRepository.findByUsername(registerUser.getUsername()).isPresent()) {
             throw new RuntimeException("User already exists");
         }
+        RoleName roleNameEnum;
+        try {
+            roleNameEnum = RoleName.valueOf(registerUser.getRole().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid role: " + registerUser.getRole());
+        }
+
+        Role userRole = roleRepository.findByName(roleNameEnum)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
         List<Role> roles = new ArrayList<>();
-        Role userRole = roleRepository.findByName("ROLE_USER").get();
         roles.add(userRole);
         user.setRoles(roles);
         User savedUser = userRepository.save(user);
-        List<String> roleNames = savedUser.getRoles().stream().map(role -> role.getName()).toList();
+        List<String> roleNames = savedUser.getRoles().stream().map(role -> role.getName().name()).toList();
         return new AuthResponse(jwtService.generateToken(savedUser), roleNames);
     }
 
@@ -50,10 +60,7 @@ public class AuthService {
         Authentication authToken = new UsernamePasswordAuthenticationToken(loginUser.getUsername(), loginUser.getPassword());
         authenticationManager.authenticate(authToken);
         User user = userRepository.findByUsername(loginUser.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
-        List<String> roleList = user.getAuthorities().stream().map(grantedAuthority -> {
-            return grantedAuthority.getAuthority();
-        }).toList();
-
-        return new AuthResponse(jwtService.generateToken(user), roleList);
+        List<String> roleNames = user.getRoles().stream().map(role -> role.getName().name()).toList();
+        return new AuthResponse(jwtService.generateToken(user), roleNames);
     }
 }
