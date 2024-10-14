@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.enums.RoleName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class Role extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "name", nullable = false, length = 20, unique = true)
+    @Enumerated(EnumType.STRING)
+    private RoleName name;
 }

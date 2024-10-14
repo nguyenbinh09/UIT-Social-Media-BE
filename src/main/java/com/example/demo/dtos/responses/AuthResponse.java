@@ -1,5 +1,6 @@
 package com.example.demo.dtos.responses;
 
+import com.example.demo.enums.RoleName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
