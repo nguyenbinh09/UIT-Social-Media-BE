@@ -1,7 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dtos.requests.CreateRoleRequest;
-import com.example.demo.services.RoleService;
+import com.example.demo.dtos.requests.CreatePrivacyRequest;
+import com.example.demo.services.PrivacyService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,17 +12,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/api/privacy")
 @AllArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
-public class RoleController {
-    private final RoleService roleService;
+public class PrivacyController {
+    private final PrivacyService privacyService;
 
-    @PostMapping("/createRole")
-    public ResponseEntity<?> createRole(@RequestBody CreateRoleRequest roleRequest) {
+    @PostMapping("/create")
+    public ResponseEntity<?> createPrivacy(@RequestBody CreatePrivacyRequest createPrivacyRequest) {
         try {
-            return roleService.createRole(roleRequest);
+            return privacyService.createPrivacy(createPrivacyRequest);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

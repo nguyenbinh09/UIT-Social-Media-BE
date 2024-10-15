@@ -35,17 +35,8 @@ public class AuthService {
         user.setUsername(registerUser.getUsername());
         user.setEmail(registerUser.getEmail());
         user.setPassword(passwordEncoder.encode(raw_password));
-        if (userRepository.findByUsername(registerUser.getUsername()).isPresent()) {
-            throw new RuntimeException("User already exists");
-        }
-        RoleName roleNameEnum;
-        try {
-            roleNameEnum = RoleName.valueOf(registerUser.getRole().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid role: " + registerUser.getRole());
-        }
 
-        Role userRole = roleRepository.findByName(roleNameEnum)
+        Role userRole = roleRepository.findById(registerUser.getRoleId())
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         List<Role> roles = new ArrayList<>();
