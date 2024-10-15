@@ -1,7 +1,9 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dtos.requests.CreateRoleRequest;
-import com.example.demo.services.RoleService;
+import com.example.demo.dtos.requests.CreateReactionTypeRequest;
+import com.example.demo.enums.ReactionTypeName;
+import com.example.demo.models.ReactionType;
+import com.example.demo.services.ReactionTypeService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,17 +14,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/api/reaction_types")
 @AllArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
-public class RoleController {
-    private final RoleService roleService;
+public class ReactionTypeController {
+    private final ReactionTypeService reactionTypeService;
 
-    @PostMapping("/createRole")
-    public ResponseEntity<?> createRole(@RequestBody CreateRoleRequest roleRequest) {
+    @PostMapping("/create")
+    public ResponseEntity<?> createReactionType(@RequestBody CreateReactionTypeRequest createReactionTypeRequest) {
         try {
-            return roleService.createRole(roleRequest);
+            return reactionTypeService.createReactionType(createReactionTypeRequest);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

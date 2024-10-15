@@ -1,6 +1,6 @@
 package com.example.demo.enums;
 
-public enum Privacy {
+public enum PrivacyName {
     PUBLIC,
     PRIVATE
 }

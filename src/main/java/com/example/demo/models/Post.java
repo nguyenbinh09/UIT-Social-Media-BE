@@ -1,11 +1,12 @@
 package com.example.demo.models;
 
-import com.example.demo.enums.Privacy;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -28,9 +29,12 @@ public class Post extends BaseModel {
     @Column(name = "title")
     private String title;
 
-    @Column(name = "privacy")
-    @Enumerated(EnumType.STRING)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "privacy_id")
     private Privacy privacy;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<PostReaction> reactions;
 }
 
 

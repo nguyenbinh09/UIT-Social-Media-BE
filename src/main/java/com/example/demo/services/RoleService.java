@@ -19,7 +19,7 @@ public class RoleService {
         String roleNameString = roleRequest.getName();
         RoleName roleNameEnum;
         try {
-            roleNameEnum = RoleName.valueOf(roleNameString.toUpperCase());
+            roleNameEnum = RoleName.valueOf(roleNameString);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid role: " + roleNameString);
         }
