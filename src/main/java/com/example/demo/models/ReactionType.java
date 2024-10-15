@@ -1,6 +1,6 @@
 package com.example.demo.models;
 
-import com.example.demo.enums.RoleName;
+import com.example.demo.enums.ReactionTypeName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,15 +9,15 @@ import lombok.NoArgsConstructor;
 
 @EqualsAndHashCode(callSuper = false)
 @Entity
-@Table(name = "roles")
+@Table(name = "reaction_types")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role extends BaseModel {
+public class ReactionType extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", nullable = false, length = 20, unique = true)
+    @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    private RoleName name;
+    private ReactionTypeName name;
 }

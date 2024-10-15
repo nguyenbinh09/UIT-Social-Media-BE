@@ -1,5 +1,6 @@
 package com.example.demo.dtos.requests;
 
+import com.example.demo.models.Post;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,5 +11,5 @@ import lombok.NoArgsConstructor;
 public class CreatePostRequest {
     private String textContent;
     private String title;
-    private String userId;
+    private Long privacy_id;
 }

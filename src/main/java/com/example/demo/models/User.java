@@ -50,8 +50,9 @@ public class User extends BaseModel implements UserDetails {
 
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Assuming getRoles() returns a collection of Role enums
         return this.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_"+role.getName())) // Prefix role with "ROLE_"
                 .collect(Collectors.toList());
     }
 

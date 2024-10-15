@@ -12,5 +12,4 @@ public class UitAppApplication {
     public static void main(String[] args) {
         SpringApplication.run(UitAppApplication.class, args);
     }
-
 }

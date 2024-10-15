@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,4 +28,13 @@ public class Post extends BaseModel {
 
     @Column(name = "title")
     private String title;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "privacy_id")
+    private Privacy privacy;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<PostReaction> reactions;
 }
+
+
