@@ -51,12 +51,36 @@ public class FirebaseService {
 
     public String uploadFile(MultipartFile file) {
         try {
+            String fileName = file.getOriginalFilename() + "_" + System.currentTimeMillis();
+
             Bucket bucket = StorageClient.getInstance(firebaseApp).bucket(bucketName);
 
-            Blob blob = bucket.create(file.getOriginalFilename(), file.getBytes(), file.getContentType());
+            Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
 
             blob.createAcl(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
             return blob.getMediaLink();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public void deleteFile(String url) {
+        try {
+            String[] parts = url.split("/");
+            String fileNameWithParams  = parts[parts.length - 1];
+            String fileName = fileNameWithParams.split("\\?")[0];
+            Bucket bucket = StorageClient.getInstance(firebaseApp).bucket(bucketName);
+            Blob blob = bucket.get(fileName);
+            if (blob != null) {
+                boolean deleted = blob.delete();
+                if (deleted) {
+                    System.out.println("File deleted successfully: " + fileName);
+                } else {
+                    System.out.println("Failed to delete the file: " + fileName);
+                }
+            } else {
+                System.out.println("File not found in the bucket: " + fileName);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }

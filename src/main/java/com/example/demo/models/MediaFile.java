@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.enums.MediaType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,4 +27,8 @@ public class MediaFile extends BaseModel{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "media_type")
+    private MediaType mediaType;
 }
