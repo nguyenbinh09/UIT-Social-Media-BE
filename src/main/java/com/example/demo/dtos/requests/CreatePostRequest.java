@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 public class CreatePostRequest {
     private String textContent;
     private String title;
-    private Long privacy_id;
+    private Long privacyId;
 }

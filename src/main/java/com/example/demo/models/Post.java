@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,6 +36,9 @@ public class Post extends BaseModel {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<PostReaction> reactions;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MediaFile> mediaFiles;
 }
 
 

@@ -1,8 +1,10 @@
 package com.example.demo.configs;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Bucket;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.cloud.StorageClient;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,8 @@ public class FirebaseConfig {
     private String databaseUrl;
     @Value("${firebase.config.path}")
     private String configPath;
+    @Value("${firebase.bucket.name}")
+    private String bucketName;
 
     @Bean
     public FirebaseApp initializeFirebaseApp() throws IOException {
@@ -40,4 +44,5 @@ public class FirebaseConfig {
         // Ensure we have an initialized FirebaseApp instance before accessing DatabaseReference
         return FirebaseDatabase.getInstance(firebaseApp).getReference();
     }
+
 }
