@@ -10,24 +10,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "comments")
+@Table(name = "media_files")
 @EqualsAndHashCode(callSuper = true)
-public class Comment extends BaseModel {
+public class MediaFile extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "comment_id")
-    private User user;
+    @Column(name = "file_name")
+    private String fileName;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @Column(name = "url")
+    private String url;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
-
-    @Column(name = "parent_id")
-    private String parentId;
-
-    @Column(name = "text_content")
-    private String textContent;
 }

@@ -1,6 +1,7 @@
 package com.example.demo.models;
 
 import com.example.demo.enums.PrivacyName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class Privacy extends BaseModel{
     @Column(name = "description")
     private String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "privacy", cascade = CascadeType.ALL)
     private List<Post> posts;
 }

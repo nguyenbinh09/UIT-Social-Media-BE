@@ -38,9 +38,13 @@ public class ReactionService {
 
         if (postReactionOpt.isPresent()) {
             PostReaction existingPostReaction = postReactionOpt.get();
-            existingPostReaction.setReactionType(reactionType);
-            postReactionRepository.save(existingPostReaction);
-            return ResponseEntity.ok("Reaction updated successfully");
+            if (existingPostReaction.getReactionType().getId().equals(reactionType.getId())) {
+                return ResponseEntity.ok("Reaction duplicated, no changes made");
+            } else {
+                existingPostReaction.setReactionType(reactionType);
+                postReactionRepository.save(existingPostReaction);
+                return ResponseEntity.ok("Reaction updated successfully");
+            }
         } else {
             PostReaction newPostReaction = new PostReaction();
             newPostReaction.setPost(post);
@@ -50,7 +54,8 @@ public class ReactionService {
             return ResponseEntity.ok("Reaction created successfully");
         }
     }
-    public void deleteReaction(Long postReactionId) {
+    public ResponseEntity<?> deleteReaction(Long postReactionId) {
         postReactionRepository.deleteById(postReactionId);
+        return ResponseEntity.ok("Reaction deleted successfully");
     }
 }
