@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.dtos.requests.CreatePostRequest;
+import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.models.Post;
 import com.example.demo.services.PostService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +38,16 @@ public class PostController {
         try {
             CreatePostRequest postRequest = objectMapper.readValue(postRequestString, CreatePostRequest.class);
             return postService.createPost(postRequest, mediaFiles);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping(value = "/updatePost", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updatePost(@RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles){
+        try {
+            UpdatePostRequest postRequest = objectMapper.readValue(postRequestString, UpdatePostRequest.class);
+            return postService.updatePost(postRequest, mediaFiles);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

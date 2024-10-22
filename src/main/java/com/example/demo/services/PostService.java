@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreatePostRequest;
+import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.models.Post;
 import com.example.demo.models.Privacy;
@@ -54,14 +55,48 @@ public class PostService {
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
-
-
         post.setMediaFiles(mediaFileService.uploadMediaFile(post, mediaFiles));
         postReposiroty.save(post);
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
         firebaseService.pushPostToFollowers(post, followerIds);
         return ResponseEntity.ok().body("Post created successfully");
+    }
+
+    @Transactional
+    public ResponseEntity<?> updatePost(UpdatePostRequest postRequest, List<MultipartFile> mediaFiles) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postReposiroty.findById(postRequest.getId()).orElseThrow(() -> new RuntimeException("Post not found"));
+        if(!post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You are not authorized to update this post");
+        }
+        if (postRequest.getTitle() != null && !post.getTitle().equals(postRequest.getTitle())) {
+            post.setTitle(postRequest.getTitle());
+        }
+        if (postRequest.getTextContent() != null && !post.getTextContent().equals(postRequest.getTextContent())) {
+            post.setTextContent(postRequest.getTextContent());
+        }
+        if (postRequest.getPrivacyId() != null && !post.getPrivacy().getId().equals(postRequest.getPrivacyId())) {
+            Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
+            post.setPrivacy(privacy);
+        }
+        if (mediaFiles != null && !mediaFiles.isEmpty()) {
+            mediaFileService.deleteMediaFiles(post.getMediaFiles());
+            post.setMediaFiles(mediaFileService.uploadMediaFile(post, mediaFiles));
+        }
+        return ResponseEntity.ok().body("Post updated successfully");
+    }
+
+    public ResponseEntity<?> deletePost(Long postId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postReposiroty.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if(!post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You are not authorized to delete this post");
+        }
+        postReposiroty.delete(post);
+        return ResponseEntity.ok().body("Post deleted successfully");
     }
 
 //    public ResponseEntity<?> createImage(List<MultipartFile> files) {
