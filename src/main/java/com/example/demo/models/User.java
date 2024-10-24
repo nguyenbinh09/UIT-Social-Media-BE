@@ -32,6 +32,8 @@ public class User extends BaseModel implements UserDetails {
     private String email;
     @Column(name = "password", nullable = false)
     private String password;
+    @Column(name = "fcm_token")
+    private String fcmToken;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",

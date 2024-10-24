@@ -1,5 +1,6 @@
 package com.example.demo.dtos.responses;
 
+import com.example.demo.models.MediaFile;
 import com.example.demo.models.Post;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class PostResponse {
     private String title;
     private PrivacyResponse privacy;
     private UserResponse user;
+    private List<String> mediaFiles;
     private LocalDateTime createdAt;
     public PostResponse toDTO(Post post) {
         PostResponse postResponse = new PostResponse();
@@ -27,6 +29,7 @@ public class PostResponse {
         postResponse.setTitle(post.getTitle());
         postResponse.setPrivacy(new PrivacyResponse().toDTO(post.getPrivacy()));
         postResponse.setUser(new UserResponse().toDTO(post.getUser()));
+        postResponse.setMediaFiles(post.getMediaFiles().stream().map(MediaFile::getUrl).toList());
         postResponse.setCreatedAt(post.getCreatedAt());
         return postResponse;
     }

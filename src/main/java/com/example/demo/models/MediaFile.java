@@ -28,6 +28,10 @@ public class MediaFile extends BaseModel{
     @JoinColumn(name = "post_id")
     private Post post;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    private Comment comment;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "media_type")
     private MediaType mediaType;

@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.CreatePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.dtos.responses.PostResponse;
+import com.example.demo.enums.FeedItemType;
 import com.example.demo.models.Post;
 import com.example.demo.models.Privacy;
 import com.example.demo.models.User;
@@ -55,7 +56,9 @@ public class PostService {
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
-        post.setMediaFiles(mediaFileService.uploadMediaFile(post, mediaFiles));
+        if(mediaFiles != null && !mediaFiles.isEmpty()) {
+            post.setMediaFiles(mediaFileService.uploadMediaFile(post.getId(), FeedItemType.POST, mediaFiles));
+        }
         postReposiroty.save(post);
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
@@ -83,7 +86,7 @@ public class PostService {
         }
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
             mediaFileService.deleteMediaFiles(post.getMediaFiles());
-            post.setMediaFiles(mediaFileService.uploadMediaFile(post, mediaFiles));
+            post.setMediaFiles(mediaFileService.uploadMediaFile(post.getId(), FeedItemType.POST, mediaFiles));
         }
         return ResponseEntity.ok().body("Post updated successfully");
     }
