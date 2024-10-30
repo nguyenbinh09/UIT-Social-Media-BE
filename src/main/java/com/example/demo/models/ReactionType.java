@@ -13,11 +13,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReactionType extends BaseModel{
+public class ReactionType extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "type")
+
+    @Column(name = "name")
     @Enumerated(EnumType.STRING)
     private ReactionTypeName name;
 }

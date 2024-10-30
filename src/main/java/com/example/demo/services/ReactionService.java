@@ -20,7 +20,7 @@ import java.util.Optional;
 public class ReactionService {
     private final ReactionRepository reactionRepository;
     private final PostReactionRepository postReactionRepository;
-    private final PostReposiroty postRepository;
+    private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ReactionTypeRepository reactionTypeRepository;
 
@@ -35,13 +35,13 @@ public class ReactionService {
                 .orElseThrow(() -> new RuntimeException("Reaction not found"));
 
         Optional<PostReaction> postReactionOpt = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId());
-
         if (postReactionOpt.isPresent()) {
             PostReaction existingPostReaction = postReactionOpt.get();
             if (existingPostReaction.getReactionType().getId().equals(reactionType.getId())) {
                 return ResponseEntity.ok("Reaction duplicated, no changes made");
             } else {
                 existingPostReaction.setReactionType(reactionType);
+                System.out.println(existingPostReaction.getReactionType().getId() + "  " + reactionType.getId());
                 postReactionRepository.save(existingPostReaction);
                 return ResponseEntity.ok("Reaction updated successfully");
             }
@@ -54,6 +54,7 @@ public class ReactionService {
             return ResponseEntity.ok("Reaction created successfully");
         }
     }
+
     public ResponseEntity<?> deleteReaction(Long postReactionId) {
         postReactionRepository.deleteById(postReactionId);
         return ResponseEntity.ok("Reaction deleted successfully");

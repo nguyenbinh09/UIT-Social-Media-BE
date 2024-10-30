@@ -32,6 +32,8 @@ public class User extends BaseModel implements UserDetails {
     private String email;
     @Column(name = "password", nullable = false)
     private String password;
+    @Column(name = "fcm_token")
+    private String fcmToken;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
@@ -39,6 +41,7 @@ public class User extends BaseModel implements UserDetails {
             inverseJoinColumns = {@JoinColumn(name = "role_id")})
     private List<Role> roles = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
@@ -56,7 +59,7 @@ public class User extends BaseModel implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Assuming getRoles() returns a collection of Role enums
         return this.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_"+role.getName())) // Prefix role with "ROLE_"
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())) // Prefix role with "ROLE_"
                 .collect(Collectors.toList());
     }
 

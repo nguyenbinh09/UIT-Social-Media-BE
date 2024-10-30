@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "post_reactions")
 @EqualsAndHashCode(callSuper = true)
-public class PostReaction extends Reaction{
+public class PostReaction extends Reaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
