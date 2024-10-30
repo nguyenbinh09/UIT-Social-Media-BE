@@ -7,7 +7,7 @@ import com.example.demo.models.MediaFile;
 import com.example.demo.models.Post;
 import com.example.demo.repositories.CommentRepository;
 import com.example.demo.repositories.MediaFileRepository;
-import com.example.demo.repositories.PostReposiroty;
+import com.example.demo.repositories.PostRepository;
 import com.example.demo.utils.MediaFIleUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import java.util.List;
 public class MediaFileService {
     private final FirebaseService FirebaseService;
     private final MediaFileRepository mediaFileRepository;
-    private PostReposiroty postReposiroty;
+    private PostRepository postRepository;
     private CommentRepository commentRepository;
 
     public List<MediaFile> uploadMediaFile(Long id, FeedItemType feedItemType, List<MultipartFile> mediaFiles) {
@@ -37,7 +37,7 @@ public class MediaFileService {
             mediaFile.setMediaType(mediaType);
             switch (feedItemType) {
                 case POST:
-                    Post post = postReposiroty.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));
+                    Post post = postRepository.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));
                     mediaFile.setPost(post);
                     break;
                 case COMMENT:
@@ -51,7 +51,7 @@ public class MediaFileService {
     }
 
     public void deleteMediaFiles(List<MediaFile> mediaFiles) {
-        for(MediaFile mediaFile : mediaFiles) {
+        for (MediaFile mediaFile : mediaFiles) {
             FirebaseService.deleteFile(mediaFile.getUrl());  // Delete from Firebase
             mediaFileRepository.delete(mediaFile);
         }

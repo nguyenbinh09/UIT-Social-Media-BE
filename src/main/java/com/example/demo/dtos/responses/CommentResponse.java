@@ -17,7 +17,7 @@ public class CommentResponse {
     private Long id;
     private UserResponse user;
     private PostResponse post;
-    private String parentId;
+    private Long parentId;
     private String textContent;
     private List<String> mediaFiles;
     private LocalDateTime createdAt;
@@ -27,7 +27,13 @@ public class CommentResponse {
         commentResponse.setId(comment.getId());
         commentResponse.setUser(new UserResponse().toDTO(comment.getUser()));
         commentResponse.setPost(new PostResponse().toDTO(comment.getPost()));
-        commentResponse.setParentId(comment.getParentId());
+
+        if (comment.getParentComment() != null) {
+            commentResponse.setParentId(comment.getParentComment().getId());
+        } else {
+            commentResponse.setParentId(null);
+        }
+
         commentResponse.setTextContent(comment.getTextContent());
         commentResponse.setMediaFiles(comment.getMediaFiles().stream().map(MediaFile::getUrl).toList());
         commentResponse.setCreatedAt(comment.getCreatedAt());

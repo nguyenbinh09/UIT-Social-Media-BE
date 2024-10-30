@@ -14,6 +14,9 @@ import com.google.cloud.storage.Storage;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.cloud.StorageClient;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,21 +37,20 @@ public class FirebaseService {
     private final String bucketName;
     private final ObjectMapper objectMapper;
     private final NotificationService notificationService;
-    private final UserRepository userRepository;
 
     @Autowired
-    public FirebaseService(@Value("${firebase.bucket.name}") String bucketName, DatabaseReference firebaseDatabase, FirebaseApp firebaseApp, ObjectMapper objectMapper, NotificationService notificationService, UserRepository userRepository) {
+    public FirebaseService(@Value("${firebase.bucket.name}") String bucketName, DatabaseReference firebaseDatabase, FirebaseApp firebaseApp, ObjectMapper objectMapper, NotificationService notificationService) {
         this.firebaseDatabase = firebaseDatabase;
         this.firebaseApp = firebaseApp;
         this.bucketName = bucketName;
         this.objectMapper = objectMapper;
         this.notificationService = notificationService;
-        this.userRepository = userRepository;
     }
 
     public void pushPostToFollowers(Post post, List<String> followerIds) {
         PostResponse postResponse = new PostResponse().toDTO(post);
-        Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<Map<String, Object>>() {
+        });
         firebaseDatabase.child("posts").child(postResponse.getId().toString())
                 .setValueAsync(postResponseMap);
         for (String followerId : followerIds) {
@@ -63,24 +65,26 @@ public class FirebaseService {
         }
     }
 
-    public void sendNotificationToFollowers(Post post, List<String> followerIds) {
-        String notificationTitle = "New post from " + post.getUser().getUsername();
-        String notificationBody = post.getTitle();
-
-        for (String followerId : followerIds) {
-            String fcmToken = userRepository.findFcmTokenByUserId(followerId);
-
-            if (fcmToken != null && !fcmToken.isEmpty()) {
-                notificationService.sendNotification(fcmToken, notificationTitle, notificationBody);
-            }
+    public void sendNotificationToUser(String fcmToken, String title, String message) {
+        try {
+            Message firebaseMessage = Message.builder()
+                    .setToken(fcmToken)
+                    .putData("title", title)
+                    .putData("message", message)
+                    .build();
+            FirebaseMessaging.getInstance(firebaseApp).send(firebaseMessage);
+        } catch (FirebaseMessagingException e) {
+            throw new RuntimeException("Failed to send FCM notification", e);
         }
     }
 
     public void pushCommentToPostOwner(Comment comment) {
         CommentResponse commentResponse = new CommentResponse().toDTO(comment);
-        Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<Map<String, Object>>() {
+        });
         // Push comment notification to post owner in Firebase
-        firebaseDatabase.child("comments").child("postId: " + commentResponse.getPost().getId()).child(commentResponse.getUser().getId())
+        firebaseDatabase.child("comments")
+                .child(commentResponse.getId().toString())
                 .setValueAsync(commentResponseMap);
     }
 
@@ -102,7 +106,7 @@ public class FirebaseService {
     public void deleteFile(String url) {
         try {
             String[] parts = url.split("/");
-            String fileNameWithParams  = parts[parts.length - 1];
+            String fileNameWithParams = parts[parts.length - 1];
             String fileName = fileNameWithParams.split("\\?")[0];
             Bucket bucket = StorageClient.getInstance(firebaseApp).bucket(bucketName);
             Blob blob = bucket.get(fileName);
