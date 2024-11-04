@@ -55,8 +55,13 @@ public class ReactionService {
         }
     }
 
-    public ResponseEntity<?> deleteReaction(Long postReactionId) {
-        postReactionRepository.deleteById(postReactionId);
+    public ResponseEntity<?> deleteReaction(Long PostId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(PostId).orElseThrow(() -> new RuntimeException("Post not found"));
+        PostReaction postReaction = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Reaction not found"));
+        postReactionRepository.delete(postReaction);
         return ResponseEntity.ok("Reaction deleted successfully");
     }
 }

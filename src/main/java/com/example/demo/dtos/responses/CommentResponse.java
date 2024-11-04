@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -16,28 +17,28 @@ import java.util.stream.Collectors;
 public class CommentResponse {
     private Long id;
     private UserResponse user;
-    private PostResponse post;
+    private Long postId;
     private Long parentId;
     private String textContent;
+    private List<CommentResponse> replies;
     private List<String> mediaFiles;
     private LocalDateTime createdAt;
 
     public CommentResponse toDTO(Comment comment) {
-        CommentResponse commentResponse = new CommentResponse();
-        commentResponse.setId(comment.getId());
-        commentResponse.setUser(new UserResponse().toDTO(comment.getUser()));
-        commentResponse.setPost(new PostResponse().toDTO(comment.getPost()));
+        this.setId(comment.getId());
+        this.setUser(new UserResponse().toDTO(comment.getUser()));
+        this.setPostId(comment.getPost().getId());
 
         if (comment.getParentComment() != null) {
-            commentResponse.setParentId(comment.getParentComment().getId());
+            this.setParentId(comment.getParentComment().getId());
         } else {
-            commentResponse.setParentId(null);
+            this.setParentId(null);
         }
 
-        commentResponse.setTextContent(comment.getTextContent());
-        commentResponse.setMediaFiles(comment.getMediaFiles().stream().map(MediaFile::getUrl).toList());
-        commentResponse.setCreatedAt(comment.getCreatedAt());
-        return commentResponse;
+        this.setTextContent(comment.getTextContent());
+        this.setMediaFiles(comment.getMediaFiles().stream().map(MediaFile::getUrl).toList());
+        this.setCreatedAt(comment.getCreatedAt());
+        return this;
     }
 
     public List<CommentResponse> mapCommentsToDTOs(List<Comment> comments) {
@@ -45,4 +46,6 @@ public class CommentResponse {
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
+
+
 }

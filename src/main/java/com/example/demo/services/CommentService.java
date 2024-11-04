@@ -1,6 +1,8 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreateCommentRequest;
+import com.example.demo.dtos.responses.CommentResponse;
+import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.FeedItemType;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
@@ -9,6 +11,10 @@ import com.example.demo.repositories.CommentRepository;
 import com.example.demo.repositories.PostRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.*;
+
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -74,5 +82,60 @@ public class CommentService {
                 notificationService.sendNotification(parentCommentOwner.getFcmToken(), "New Reply", replyMessage);
             }
         }
+    }
+
+    @Transactional
+    public ResponseEntity<PagedModel<CommentResponse>> getCommentsWithReplies(Long postId, int page, int size, PagedResourcesAssembler assembler) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Comment> topLevelComments = commentRepository.findByPostIdAndParentCommentIsNull(postId, pageable);
+        List<Long> topLevelCommentIds = topLevelComments.getContent().stream()
+                .map(Comment::getId)
+                .collect(Collectors.toList());
+
+        // Fetch replies for top-level comments up to the specified depth
+        List<Comment> replies = commentRepository.findByParentCommentIdIn(topLevelCommentIds);
+
+        // Group replies by parent comment ID
+        Map<Long, List<Comment>> repliesMap = replies.stream()
+                .collect(Collectors.groupingBy(comment -> comment.getParentComment().getId()));
+
+        // Convert top-level comments to DTOs with controlled depth
+        List<CommentResponse> commentResponses = topLevelComments.getContent().stream()
+                .map(comment -> toDTOWithDepth(comment, repliesMap, 1, 2))
+                .collect(Collectors.toList());
+
+        Page<CommentResponse> commentResponsePage = new PageImpl<>(commentResponses, pageable, topLevelComments.getTotalElements());
+        PagedModel<CommentResponse> pagedModel = assembler.toModel(commentResponsePage);
+        return ResponseEntity.ok(pagedModel);
+    }
+
+    public CommentResponse toDTOWithDepth(Comment comment, Map<Long, List<Comment>> repliesMap, int currentDepth, int maxDepth) {
+        CommentResponse commentResponse = new CommentResponse();
+        commentResponse.toDTO(comment);
+
+        // Load replies only if the current depth is less than the max depth
+        if (currentDepth < maxDepth) {
+            List<Comment> replies = repliesMap.get(comment.getId());
+            System.out.println(currentDepth + " " + comment.getId());
+            if (replies != null) {
+                commentResponse.setReplies(replies.stream()
+                        .map(reply -> toDTOWithDepth(reply, repliesMap, currentDepth + 1, maxDepth))
+                        .collect(Collectors.toList()));
+            }
+        }
+        return commentResponse;
+    }
+
+    public ResponseEntity<PagedModel<CommentResponse>> getReplies(Long parentCommentId, int page, int size, PagedResourcesAssembler assembler) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
+        Page<Comment> repliesPage = commentRepository.findByParentCommentId(parentCommentId, pageable);
+
+        List<CommentResponse> replies = repliesPage.getContent().stream()
+                .map(comment -> new CommentResponse().toDTO(comment))
+                .collect(Collectors.toList());
+
+        Page<CommentResponse> commentResponsePage = new PageImpl<>(replies, pageable, repliesPage.getTotalElements());
+        PagedModel<CommentResponse> pagedModel = assembler.toModel(commentResponsePage);
+        return ResponseEntity.ok(pagedModel);
     }
 }

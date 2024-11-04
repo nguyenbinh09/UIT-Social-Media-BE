@@ -26,9 +26,9 @@ public class ReactionController {
     }
 
     @DeleteMapping("/deleteReaction")
-    public ResponseEntity<?> deleteReaction(@RequestBody Long postReactionId) {
+    public ResponseEntity<?> deleteReaction(@RequestParam Long postId) {
         try {
-            return reactionService.deleteReaction(postReactionId);
+            return reactionService.deleteReaction(postId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
