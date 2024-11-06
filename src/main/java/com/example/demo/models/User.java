@@ -34,6 +34,8 @@ public class User extends BaseModel implements UserDetails {
     private String password;
     @Column(name = "fcm_token")
     private String fcmToken;
+    @Column(name = "code")
+    private String code;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
@@ -44,6 +46,10 @@ public class User extends BaseModel implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Follow> followRequests = new ArrayList<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

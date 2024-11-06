@@ -12,11 +12,13 @@ import java.util.Optional;
 
 @Repository
 public interface FollowRepository extends JpaRepository<Follow, Long> {
-    @Query("SELECT f.followedId FROM Follow f WHERE f.followerId = :followerId")
+
+    @Query("SELECT f.followed.id FROM Follow f WHERE f.follower.id = :followerId")
     List<String> findFollowedIdsByFollowerId(@Param("followerId") String followerId);
 
-    @Query("SELECT f.followerId FROM Follow f WHERE f.followedId = :followedId")
+    @Query("SELECT f.follower.id FROM Follow f WHERE f.followed.id = :followedId")
     List<String> findFollowerIdsByFollowedId(@Param("followedId") String followedId);
 
-    Optional<Follow> findByFollowerIdAndFollowedId(String followerId, String followedId);
+    @Query("SELECT f FROM Follow f WHERE f.follower.id = :followerId AND f.followed.id = :followedId")
+    Optional<Follow> findByFollowerIdAndFollowedId(@Param("followerId") String followerId, @Param("followedId") String followedId);
 }
