@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.dtos.requests.FollowUserRequest;
+import com.example.demo.enums.FollowRequestStatus;
 import com.example.demo.services.FollowService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,15 @@ public class FollowController {
     public ResponseEntity<?> isFollowing(@RequestParam String followedId) {
         try {
             return followService.isFollowing(followedId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/respond-follow")
+    public ResponseEntity<?> respondFollowRequest(@RequestParam Long requestId, @RequestParam FollowRequestStatus responseStatus) {
+        try {
+            return followService.respondToFollowRequest(requestId, responseStatus);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

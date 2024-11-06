@@ -11,12 +11,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "follows")
+@Table(name = "follow_requests")
 @EqualsAndHashCode(callSuper = true)
-public class Follow extends BaseModel {
+public class FollowRequest extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "follower_id")
     private User follower;
@@ -24,4 +25,12 @@ public class Follow extends BaseModel {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "followed_id")
     private User followed;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private FollowRequestStatus status;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "follow_id")
+    private Follow follow;
 }
