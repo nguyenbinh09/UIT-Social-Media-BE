@@ -84,7 +84,6 @@ public class FollowService {
     }
 
     public ResponseEntity<?> isFollowing(String followedId) {
-        // Get the current user's ID
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         String followerId = currentUser.getId();
@@ -128,7 +127,6 @@ public class FollowService {
         } else {
             return ResponseEntity.badRequest().body("The follower is not following you.");
         }
-
         return ResponseEntity.badRequest().body("Invalid response status.");
     }
 }
