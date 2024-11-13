@@ -42,6 +42,13 @@ public class Post extends BaseModel {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MediaFile> mediaFiles;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private Group group;
+
+    @Column(name = "is_approved")
+    private Boolean isApproved = false;
 }
 
 

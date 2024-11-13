@@ -22,24 +22,28 @@ public class PostResponse {
     private String title;
     private PrivacyResponse privacy;
     private UserResponse user;
+    private GroupResponse group;
     private List<String> mediaFiles;
     private ReactionTypeName reactionType;
     private LocalDateTime createdAt;
 
     public PostResponse toDTO(Post post) {
-        PostResponse postResponse = new PostResponse();
-        postResponse.setId(post.getId());
-        postResponse.setTextContent(post.getTextContent());
-        postResponse.setTitle(post.getTitle());
-        postResponse.setPrivacy(new PrivacyResponse().toDTO(post.getPrivacy()));
-        postResponse.setUser(new UserResponse().toDTO(post.getUser()));
-        postResponse.setMediaFiles(post.getMediaFiles().stream().map(MediaFile::getUrl).toList());
-        postResponse.setCreatedAt(post.getCreatedAt());
-        return postResponse;
+        this.setId(post.getId());
+        this.setTextContent(post.getTextContent());
+        this.setTitle(post.getTitle());
+        this.setPrivacy(new PrivacyResponse().toDTO(post.getPrivacy()));
+        this.setUser(new UserResponse().toDTO(post.getUser()));
+        if (post.getGroup() != null) {
+            this.setGroup(new GroupResponse().toDTO(post.getGroup()));
+        }
+        this.setMediaFiles(post.getMediaFiles().stream().map(MediaFile::getUrl).toList());
+        this.setCreatedAt(post.getCreatedAt());
+        return this;
     }
 
     public PostResponse toDTOWithReaction(Post post, ReactionTypeName reactionType) {
-        PostResponse postResponse = toDTO(post);
+        PostResponse postResponse = new PostResponse();
+        postResponse.toDTO(post);
         postResponse.setReactionType(reactionType);
         return postResponse;
     }

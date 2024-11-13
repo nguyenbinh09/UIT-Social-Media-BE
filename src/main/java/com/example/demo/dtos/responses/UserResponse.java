@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -24,5 +25,11 @@ public class UserResponse {
         userResponse.setEmail(user.getEmail());
         userResponse.setRoles(user.getRoles().stream().map(role -> role.getName().name()).toList());
         return userResponse;
+    }
+
+    public List<UserResponse> mapUsersToDTOs(List<User> users) {
+        return users.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 }

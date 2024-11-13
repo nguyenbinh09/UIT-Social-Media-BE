@@ -2,6 +2,7 @@ package com.example.demo.controllers;
 
 import com.example.demo.dtos.requests.CreatePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
+import com.example.demo.enums.InvitationStatus;
 import com.example.demo.models.Post;
 import com.example.demo.services.PostService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +35,7 @@ public class PostController {
     }
 
     @PostMapping(value = "/createPost", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createPost(@RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles){
+    public ResponseEntity<?> createPost(@RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
         try {
             CreatePostRequest postRequest = objectMapper.readValue(postRequestString, CreatePostRequest.class);
             return postService.createPost(postRequest, mediaFiles);
@@ -44,7 +45,7 @@ public class PostController {
     }
 
     @PutMapping(value = "/updatePost", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updatePost(@RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles){
+    public ResponseEntity<?> updatePost(@RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
         try {
             UpdatePostRequest postRequest = objectMapper.readValue(postRequestString, UpdatePostRequest.class);
             return postService.updatePost(postRequest, mediaFiles);
@@ -52,6 +53,53 @@ public class PostController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping(value = "/groups/{groupId}/createGroupPost", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createGroupPost(@PathVariable Long groupId, @RequestParam String postRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
+        try {
+            CreatePostRequest postRequest = objectMapper.readValue(postRequestString, CreatePostRequest.class);
+            return postService.createGroupPost(groupId, postRequest, mediaFiles);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reviewPost")
+    public ResponseEntity<?> reviewPost(@RequestParam Long postId, @RequestParam boolean isApproved) {
+        try {
+            return postService.reviewPostInGroup(postId, isApproved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<?> deletePost(@PathVariable Long postId) {
+        try {
+            return postService.deletePost(postId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{postId}")
+    public ResponseEntity<?> getPost(@PathVariable Long postId) {
+        try {
+            return ResponseEntity.ok(postService.getPost(postId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/groups/{groupId}")
+    public ResponseEntity<?> getGroupPosts(@PathVariable Long groupId, @RequestParam int page, @RequestParam int size) {
+        try {
+            return ResponseEntity.ok(postService.getGroupPosts(groupId, page, size));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 //    @PostMapping( value = "/createImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    public ResponseEntity<?> createImage(@RequestPart("mediaFiles") List<MultipartFile> files){

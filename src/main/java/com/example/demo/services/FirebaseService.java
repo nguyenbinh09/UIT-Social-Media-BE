@@ -47,20 +47,20 @@ public class FirebaseService {
         this.notificationService = notificationService;
     }
 
-    public void pushPostToFollowers(Post post, List<String> followerIds) {
+    public void pushPostToReceivers(Post post, List<String> receiverIds) {
         PostResponse postResponse = new PostResponse().toDTO(post);
         Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<Map<String, Object>>() {
         });
         firebaseDatabase.child("posts").child(postResponse.getId().toString())
                 .setValueAsync(postResponseMap);
-        for (String followerId : followerIds) {
+        for (String receiverId : receiverIds) {
             Map<String, Object> postReferenceMap = Map.of(
                     "post_id", post.getId(),
                     "title", postResponse.getTitle(),
                     "timestamp", postResponse.getCreatedAt().toEpochSecond(ZoneOffset.UTC)
             );
-            // Push post notification to each follower in Firebase
-            firebaseDatabase.child("feeds").child(followerId).child(postResponse.getId().toString())
+            // Push post notification to each receiver in Firebase
+            firebaseDatabase.child("feeds").child(receiverId).child(postResponse.getId().toString())
                     .setValueAsync(postReferenceMap);
         }
     }
