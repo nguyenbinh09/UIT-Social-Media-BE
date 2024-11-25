@@ -83,17 +83,9 @@ public class FollowService {
         }
     }
 
-    public ResponseEntity<?> isFollowing(String followedId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
-        String followerId = currentUser.getId();
-
+    public Boolean isFollowing(String followerId, String followedId) {
         Optional<Follow> follow = followRepository.findByFollowerIdAndFollowedId(followerId, followedId);
-        if (follow.isPresent()) {
-            return ResponseEntity.ok(true);
-        } else {
-            return ResponseEntity.ok(false);
-        }
+        return follow.isPresent();
     }
 
     @Transactional

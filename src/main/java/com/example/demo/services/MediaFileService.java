@@ -4,9 +4,11 @@ import com.example.demo.enums.FeedItemType;
 import com.example.demo.enums.MediaType;
 import com.example.demo.models.Comment;
 import com.example.demo.models.MediaFile;
+import com.example.demo.models.Message;
 import com.example.demo.models.Post;
 import com.example.demo.repositories.CommentRepository;
 import com.example.demo.repositories.MediaFileRepository;
+import com.example.demo.repositories.MessageRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.utils.MediaFIleUtils;
 import lombok.AllArgsConstructor;
@@ -23,13 +25,14 @@ public class MediaFileService {
     private final MediaFileRepository mediaFileRepository;
     private PostRepository postRepository;
     private CommentRepository commentRepository;
+    private MessageRepository messageRepository;
 
     public List<MediaFile> uploadMediaFile(Long id, FeedItemType feedItemType, List<MultipartFile> mediaFiles) {
         List<MediaFile> savedMediaFiles = new ArrayList<>();
         for (MultipartFile file : mediaFiles) {
             MediaType mediaType = MediaFIleUtils.determineMediaType(file);
             String fileName = file.getOriginalFilename();
-            String fileUrl = FirebaseService.uploadFile(file);  // Upload to Firebase
+            String fileUrl = FirebaseService.uploadFile(file);
 
             MediaFile mediaFile = new MediaFile();
             mediaFile.setFileName(fileName);
@@ -44,9 +47,14 @@ public class MediaFileService {
                     Comment comment = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Comment not found"));
                     mediaFile.setComment(comment);
                     break;
+                case MESSAGE:
+                    Message message = messageRepository.findById(id).orElseThrow(() -> new RuntimeException("Message not found"));
+                    mediaFile.setMessage(message);
+                    break;
             }
             savedMediaFiles.add(mediaFile);
         }
+        mediaFileRepository.saveAll(savedMediaFiles);
         return savedMediaFiles;
     }
 

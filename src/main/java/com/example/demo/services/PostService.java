@@ -65,7 +65,7 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
-            post.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
+            savedPost.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
         }
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
@@ -139,7 +139,7 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
-            post.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
+            savedPost.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
         }
 
         List<GroupMembership> adminMembers = groupMembershipRepository.findAdminsByGroupId(group.getId());
@@ -233,9 +233,6 @@ public class PostService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findByGroupIdAndIsDeleted(groupId, pageable);
-        for (Post post : posts) {
-            System.out.println(post.getId());
-        }
 
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();

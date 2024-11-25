@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,8 +15,15 @@ public class GroupResponse {
     private String name;
 
     public GroupResponse toDTO(Group group) {
-        this.setId(group.getId());
-        this.setName(group.getName());
-        return this;
+        GroupResponse groupResponse = new GroupResponse();
+        groupResponse.setId(group.getId());
+        groupResponse.setName(group.getName());
+        return groupResponse;
+    }
+
+    public List<GroupResponse> mapGroupsToDTOs(List<Group> groups) {
+        return groups.stream()
+                .map(this::toDTO)
+                .toList();
     }
 }

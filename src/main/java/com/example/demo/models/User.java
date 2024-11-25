@@ -54,7 +54,7 @@ public class User extends BaseModel implements UserDetails {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupMembership> groups = new ArrayList<>();
-
+    
     public User(String username, String password, String email) {
         this.username = username;
         this.password = password;

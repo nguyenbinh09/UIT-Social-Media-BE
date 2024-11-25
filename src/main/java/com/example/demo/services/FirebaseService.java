@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.responses.CommentResponse;
+import com.example.demo.dtos.responses.MessageResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
@@ -82,10 +83,51 @@ public class FirebaseService {
         CommentResponse commentResponse = new CommentResponse().toDTO(comment);
         Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<Map<String, Object>>() {
         });
-        // Push comment notification to post owner in Firebase
+
         firebaseDatabase.child("comments")
                 .child(commentResponse.getId().toString())
                 .setValueAsync(commentResponseMap);
+    }
+
+    public void pushMessageToReceiver(com.example.demo.models.Message message) {
+        MessageResponse messageResponse = new MessageResponse().toDTO(message);
+        Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<Map<String, Object>>() {
+        });
+
+        String conversationId = message.getConversation().getId().toString();
+        if (!message.getConversation().getIsPending()) {
+            firebaseDatabase.child("conversations").child(conversationId).child("messages")
+                    .child(messageResponse.getId().toString())
+                    .setValueAsync(messageMap);
+        } else {
+            firebaseDatabase.child("conversations").child(conversationId).child("pending_messages")
+                    .child(messageResponse.getId().toString())
+                    .setValueAsync(messageMap);
+        }
+    }
+
+    public void pushApprovedMessage(com.example.demo.models.Message message) {
+        Map<String, Object> messageMap = objectMapper.convertValue(message, new TypeReference<Map<String, Object>>() {
+        });
+
+        firebaseDatabase.child("conversations")
+                .child(message.getConversation().getId().toString())
+                .child("messages")
+                .child(message.getId().toString())
+                .setValueAsync(messageMap);
+
+        firebaseDatabase.child("conversations")
+                .child(message.getConversation().getId().toString())
+                .child("pending_messages")
+                .child(message.getId().toString())
+                .removeValueAsync();
+    }
+
+    public void deletePendingMessages(Long conversationId) {
+        firebaseDatabase.child("conversations")
+                .child(conversationId.toString())
+                .child("pending_messages")
+                .removeValueAsync();
     }
 
     public String uploadFile(MultipartFile file) {
