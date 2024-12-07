@@ -16,6 +16,7 @@ public class MessageResponse {
     private Long id;
     private String senderId;
     private String receiverId;
+    private Long chatGroupId;
     private String content;
     private LocalDateTime createdAt;
     private List<String> mediaFiles;
@@ -23,7 +24,12 @@ public class MessageResponse {
     public MessageResponse toDTO(Message message) {
         this.setId(message.getId());
         this.setSenderId(message.getSender().getId());
-        this.setReceiverId(message.getReceiver().getId());
+        if (message.getReceiver() != null) {
+            this.setReceiverId(message.getReceiver().getId());
+        }
+        if (message.getChatGroup() != null) {
+            this.setChatGroupId(message.getChatGroup().getId());
+        }
         this.setContent(message.getContent());
         this.setMediaFiles(message.getMediaFiles().stream().map(MediaFile::getUrl).toList());
         this.setCreatedAt(message.getCreatedAt());

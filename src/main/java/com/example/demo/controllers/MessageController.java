@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import com.example.demo.dtos.requests.SendGroupMessageRequest;
 import com.example.demo.dtos.requests.SendMessageRequest;
 import com.example.demo.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,4 +50,16 @@ public class MessageController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping(value = "/group/send", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> sendGroupMessaage(@RequestParam String sendGroupMessageString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
+        try {
+            SendGroupMessageRequest sendGroupMessageRequest = objectMapper.readValue(sendGroupMessageString, SendGroupMessageRequest.class);
+            return messageService.sendGroupMessage(sendGroupMessageRequest, mediaFiles);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    
 }
