@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "media_files")
 @EqualsAndHashCode(callSuper = true)
-public class MediaFile extends BaseModel{
+public class MediaFile extends BaseModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,6 +31,10 @@ public class MediaFile extends BaseModel{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id")
     private Comment comment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_id")
+    private Message message;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "media_type")

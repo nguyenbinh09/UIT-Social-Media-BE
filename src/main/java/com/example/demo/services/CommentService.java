@@ -2,7 +2,6 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreateCommentRequest;
 import com.example.demo.dtos.responses.CommentResponse;
-import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.FeedItemType;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
@@ -49,17 +48,20 @@ public class CommentService {
 
         if (commentRequest.getParentId() != null) {
             Comment parentComment = commentRepository.findById(commentRequest.getParentId()).orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            if (!parentComment.getPost().getId().equals(post.getId())) {
+                throw new RuntimeException("Parent comment does not belong to the specified post");
+            }
             savedComment.setParentComment(parentComment);
         }
-        System.out.println("mediaFiles: " + mediaFiles);
+
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
-            comment.setMediaFiles(mediaFileService.uploadMediaFile(savedComment.getId(), FeedItemType.COMMENT, mediaFiles));
+            savedComment.setMediaFiles(mediaFileService.uploadMediaFile(savedComment.getId(), FeedItemType.COMMENT, mediaFiles));
         }
 
-        firebaseService.pushCommentToPostOwner(comment);
+        firebaseService.pushCommentToPostOwner(savedComment);
 
         User postOwner = post.getUser();
-        notifyUserOfComment(postOwner, comment);
+//        notifyUserOfComment(postOwner, savedComment);
         return ResponseEntity.ok("Comment created successfully");
     }
 

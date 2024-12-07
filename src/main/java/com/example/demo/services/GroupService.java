@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreateGroupRequest;
 import com.example.demo.dtos.requests.UpdateGroupRequest;
+import com.example.demo.dtos.responses.GroupResponse;
 import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.InvitationStatus;
 import com.example.demo.enums.MembershipRequestStatus;
@@ -254,5 +255,13 @@ public class GroupService {
         groupMembership.setIsDeleted(true);
         groupMembershipRepository.save(groupMembership);
         return ResponseEntity.ok("Successfully left the group");
+    }
+
+    public ResponseEntity<?> getGroups(String userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        List<GroupMembership> groupMemberships = groupMembershipRepository.findAllByUserId(user.getId());
+        List<Group> groups = groupMemberships.stream().map(GroupMembership::getGroup).toList();
+        List<GroupResponse> groupList = new GroupResponse().mapGroupsToDTOs(groups);
+        return ResponseEntity.ok(groupList);
     }
 }

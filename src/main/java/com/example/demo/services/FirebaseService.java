@@ -1,27 +1,26 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.responses.CommentResponse;
+import com.example.demo.dtos.responses.MessageResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
-import com.example.demo.repositories.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.firestore.Firestore;
 import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
-import com.google.cloud.storage.Storage;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.cloud.StorageClient;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,6 +36,7 @@ public class FirebaseService {
     private final String bucketName;
     private final ObjectMapper objectMapper;
     private final NotificationService notificationService;
+    private final Firestore firestore = FirestoreClient.getFirestore();
 
     @Autowired
     public FirebaseService(@Value("${firebase.bucket.name}") String bucketName, DatabaseReference firebaseDatabase, FirebaseApp firebaseApp, ObjectMapper objectMapper, NotificationService notificationService) {
@@ -49,19 +49,25 @@ public class FirebaseService {
 
     public void pushPostToReceivers(Post post, List<String> receiverIds) {
         PostResponse postResponse = new PostResponse().toDTO(post);
-        Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<Map<String, Object>>() {
+        Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<>() {
         });
-        firebaseDatabase.child("posts").child(postResponse.getId().toString())
-                .setValueAsync(postResponseMap);
+
+        firestore.collection("posts")
+                .document(postResponse.getId().toString())
+                .set(postResponseMap);
+
         for (String receiverId : receiverIds) {
             Map<String, Object> postReferenceMap = Map.of(
                     "post_id", post.getId(),
                     "title", postResponse.getTitle(),
                     "timestamp", postResponse.getCreatedAt().toEpochSecond(ZoneOffset.UTC)
             );
-            // Push post notification to each receiver in Firebase
-            firebaseDatabase.child("feeds").child(receiverId).child(postResponse.getId().toString())
-                    .setValueAsync(postReferenceMap);
+
+            firestore.collection("feeds")
+                    .document(receiverId)
+                    .collection("posts")
+                    .document(postResponse.getId().toString())
+                    .set(postReferenceMap);
         }
     }
 
@@ -80,12 +86,59 @@ public class FirebaseService {
 
     public void pushCommentToPostOwner(Comment comment) {
         CommentResponse commentResponse = new CommentResponse().toDTO(comment);
-        Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<Map<String, Object>>() {
+        Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<>() {
         });
-        // Push comment notification to post owner in Firebase
-        firebaseDatabase.child("comments")
-                .child(commentResponse.getId().toString())
-                .setValueAsync(commentResponseMap);
+
+        firestore.collection("comments")
+                .document(commentResponse.getId().toString())
+                .set(commentResponseMap);
+    }
+
+    public void pushMessageToReceiver(com.example.demo.models.Message message) {
+        MessageResponse messageResponse = new MessageResponse().toDTO(message);
+        Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<>() {
+        });
+
+        String conversationId = message.getConversation().getId().toString();
+        if (!message.getConversation().getIsPending()) {
+            firestore.collection("conversations")
+                    .document(conversationId)
+                    .collection("messages")
+                    .document(messageResponse.getId().toString())
+                    .set(messageMap);
+        } else {
+            firestore.collection("conversations")
+                    .document(conversationId)
+                    .collection("pending_messages")
+                    .document(messageResponse.getId().toString())
+                    .set(messageMap);
+        }
+    }
+
+    public void pushApprovedMessage(com.example.demo.models.Message message) {
+        Map<String, Object> messageMap = objectMapper.convertValue(message, new TypeReference<>() {
+        });
+
+        String conversationId = message.getConversation().getId().toString();
+
+        firestore.collection("conversations")
+                .document(conversationId)
+                .collection("messages")
+                .document(message.getId().toString())
+                .set(messageMap);
+
+        firestore.collection("conversations")
+                .document(conversationId)
+                .collection("pending_messages")
+                .document(message.getId().toString())
+                .delete();
+    }
+
+    public void deletePendingMessages(Long conversationId) {
+        firebaseDatabase.child("conversations")
+                .child(conversationId.toString())
+                .child("pending_messages")
+                .removeValueAsync();
     }
 
     public String uploadFile(MultipartFile file) {
@@ -123,5 +176,19 @@ public class FirebaseService {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+
+    public void pushGroupMessageToMembers(com.example.demo.models.Message savedMessage) {
+        MessageResponse messageResponse = new MessageResponse().toDTO(savedMessage);
+        Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<Map<String, Object>>() {
+        });
+
+        String groupId = savedMessage.getChatGroup().getId().toString();
+        firestore.collection("chat_groups")
+                .document(groupId)
+                .collection("messages")
+                .document(messageResponse.getId().toString())
+                .set(messageMap);
     }
 }

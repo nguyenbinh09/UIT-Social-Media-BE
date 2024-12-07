@@ -99,4 +99,13 @@ public class GroupController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/getGroups/{userId}")
+    public ResponseEntity<?> getGroups(@PathVariable String userId) {
+        try {
+            return groupService.getGroups(userId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

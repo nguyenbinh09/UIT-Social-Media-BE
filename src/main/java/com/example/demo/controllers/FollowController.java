@@ -36,14 +36,14 @@ public class FollowController {
         }
     }
 
-    @GetMapping("/isFollowing")
-    public ResponseEntity<?> isFollowing(@RequestParam String followedId) {
-        try {
-            return followService.isFollowing(followedId);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @GetMapping("/isFollowing")
+//    public ResponseEntity<?> isFollowing(@RequestParam String followedId) {
+//        try {
+//            return followService.isFollowing(followedId);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     @PostMapping("/respond-follow")
     public ResponseEntity<?> respondFollowRequest(@RequestParam Long requestId, @RequestParam FollowRequestStatus responseStatus) {
