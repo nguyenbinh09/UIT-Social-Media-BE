@@ -28,4 +28,8 @@ public class ChatGroup extends BaseModel {
 
     @OneToMany(mappedBy = "chatGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatGroupMember> members = new ArrayList<>();
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_id")
+    private MediaFile avatar;
 }
