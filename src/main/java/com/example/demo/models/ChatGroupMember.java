@@ -27,4 +27,7 @@ public class ChatGroupMember extends BaseModel {
 
     @Column(name = "is_admin", nullable = false)
     private Boolean isAdmin = false;
+
+    @Column(name = "is_muted", nullable = false)
+    private Boolean isMuted = false;
 }

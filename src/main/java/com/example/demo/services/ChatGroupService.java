@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreateChatGroupRequest;
 import com.example.demo.dtos.requests.CreateGroupRequest;
+import com.example.demo.dtos.requests.UpdateChatGroupRequest;
 import com.example.demo.models.ChatGroup;
 import com.example.demo.models.ChatGroupMember;
 import com.example.demo.models.User;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -107,7 +109,6 @@ public class ChatGroupService {
             throw new RuntimeException("You are not authorized to add members to this group");
         }
 
-
         for (String userId : memberIds) {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
@@ -119,5 +120,9 @@ public class ChatGroupService {
 
         chatGroupRepository.save(chatGroup);
         return ResponseEntity.ok("Members removed successfully");
+    }
+
+    public ResponseEntity<?> updateChatGroup(Long chatGroupId, UpdateChatGroupRequest updateChatGroupRequest, MultipartFile avatarImage) {
+        return null;
     }
 }
