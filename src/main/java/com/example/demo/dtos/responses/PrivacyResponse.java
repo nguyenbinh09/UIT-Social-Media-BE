@@ -16,10 +16,9 @@ public class PrivacyResponse {
     private String description;
 
     public PrivacyResponse toDTO(Privacy privacy) {
-        PrivacyResponse privacyResponse = new PrivacyResponse();
-        privacyResponse.setId(privacy.getId());
-        privacyResponse.setName(privacy.getName());
-        privacyResponse.setDescription(privacy.getDescription());
-        return privacyResponse;
+        this.setId(privacy.getId());
+        this.setName(privacy.getName());
+        this.setDescription(privacy.getDescription());
+        return this;
     }
 }

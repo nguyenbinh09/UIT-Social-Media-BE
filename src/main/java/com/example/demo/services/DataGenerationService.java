@@ -34,7 +34,6 @@ public class DataGenerationService {
             user.setEmail(code + "@gm.uit.edu.vn");
             user.setPassword(passwordEncoder.encode(faker.internet().password()));
             user.setFcmToken(faker.internet().uuid());
-            user.setCode(code);
             user.getRoles().add(role);
             users.add(user);
         }

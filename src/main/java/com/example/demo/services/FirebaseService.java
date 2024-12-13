@@ -121,7 +121,8 @@ public class FirebaseService {
     }
 
     public void pushApprovedMessage(com.example.demo.models.Message message) {
-        Map<String, Object> messageMap = objectMapper.convertValue(message, new TypeReference<>() {
+        MessageResponse messageResponse = new MessageResponse().toDTO(message);
+        Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<>() {
         });
 
         String conversationId = message.getConversation().getId().toString();
@@ -139,23 +140,25 @@ public class FirebaseService {
                 .delete();
     }
 
-    public void deletePendingMessages(Long conversationId) {
-        firebaseDatabase.child("conversations")
-                .child(conversationId.toString())
-                .child("pending_messages")
-                .removeValueAsync();
+    public void deletePendingMessages(com.example.demo.models.Message message) {
+        String conversationId = message.getConversation().getId().toString();
+        firestore.collection("conversations")
+                .document(conversationId)
+                .collection("pending_messages")
+                .document(message.getId().toString())
+                .delete();
     }
 
-    public String uploadFile(MultipartFile file) {
+    public Blob uploadFile(MultipartFile file) {
         try {
-            String fileName = file.getOriginalFilename() + "_" + System.currentTimeMillis();
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
             Bucket bucket = StorageClient.getInstance(firebaseApp).bucket(bucketName);
 
             Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
 
             blob.createAcl(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
-            return blob.getMediaLink();
+            return blob;
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -204,7 +207,6 @@ public class FirebaseService {
         notificationData.put("groupId", savedMessage.getChatGroup().getId().toString());
         notificationData.put("messageId", savedMessage.getId().toString());
 
-        // Lấy FCM token của từng thành viên
         List<String> tokens = members.stream()
                 .filter(user -> !user.getId().equals(savedMessage.getSender().getId())) // Không gửi cho người gửi
                 .map(User::getFcmToken)

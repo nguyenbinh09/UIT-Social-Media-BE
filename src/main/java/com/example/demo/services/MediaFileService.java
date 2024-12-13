@@ -11,6 +11,7 @@ import com.example.demo.repositories.MediaFileRepository;
 import com.example.demo.repositories.MessageRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.utils.MediaFIleUtils;
+import com.google.cloud.storage.Blob;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,13 +31,12 @@ public class MediaFileService {
     public List<MediaFile> uploadMediaFile(Long id, FeedItemType feedItemType, List<MultipartFile> mediaFiles) {
         List<MediaFile> savedMediaFiles = new ArrayList<>();
         for (MultipartFile file : mediaFiles) {
-            MediaType mediaType = MediaFIleUtils.determineMediaType(file);
-            String fileName = file.getOriginalFilename();
-            String fileUrl = FirebaseService.uploadFile(file);
-
             MediaFile mediaFile = new MediaFile();
-            mediaFile.setFileName(fileName);
-            mediaFile.setUrl(fileUrl);
+            MediaType mediaType = MediaFIleUtils.determineMediaType(file);
+            Blob fileBlob = FirebaseService.uploadFile(file);
+
+            mediaFile.setFileName(fileBlob.getName());
+            mediaFile.setUrl(fileBlob.getMediaLink());
             mediaFile.setMediaType(mediaType);
             switch (feedItemType) {
                 case POST:

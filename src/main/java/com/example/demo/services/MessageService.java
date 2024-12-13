@@ -37,6 +37,10 @@ public class MessageService {
         User receiver = userRepository.findById(sendMessageRequest.getReceiverId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        if (sender.getId().equals(receiver.getId())) {
+            return ResponseEntity.badRequest().body("You cannot send message to yourself");
+        }
+
         Boolean isSenderFollowingReceiver = followService.isFollowing(sender.getId(), receiver.getId());
         Boolean isReceiverFollowingSender = followService.isFollowing(receiver.getId(), sender.getId());
 
@@ -92,7 +96,7 @@ public class MessageService {
         } else {
             conversation.setIsDeleted(true);
             personalConversationRepository.save(conversation);
-            firebaseService.deletePendingMessages(conversationId);
+            firebaseService.deletePendingMessages(conversation.getMessages().get(0));
             return ResponseEntity.ok("Conversation rejected successfully");
         }
     }
@@ -140,6 +144,7 @@ public class MessageService {
                 .toList();
         firebaseService.pushGroupMessageToMembers(savedMessage);
 
+        CompletableFuture.runAsync(() -> firebaseService.sendFCMNotificationToGroupMembers(savedMessage, members));
         return ResponseEntity.ok("Message sent successfully");
     }
 

@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,7 +70,7 @@ public class CommentService {
         // Notify the post owner if the commenter is not the post owner
         if (!postOwner.getId().equals(comment.getUser().getId())) {
             String message = "New comment on your post: " + comment.getTextContent();
-            notificationService.sendNotification(postOwner.getFcmToken(), "New Comment", message);
+            CompletableFuture.runAsync(() -> notificationService.sendNotification(postOwner.getFcmToken(), "New Comment", message));
         }
 
         // If this is a reply, notify the owner of the parent comment
@@ -81,7 +82,7 @@ public class CommentService {
                     !parentCommentOwner.getId().equals(comment.getUser().getId())) {
 
                 String replyMessage = "New reply to your comment: " + comment.getTextContent();
-                notificationService.sendNotification(parentCommentOwner.getFcmToken(), "New Reply", replyMessage);
+                CompletableFuture.runAsync(() -> notificationService.sendNotification(parentCommentOwner.getFcmToken(), "New Reply", replyMessage));
             }
         }
     }

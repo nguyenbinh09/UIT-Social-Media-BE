@@ -23,7 +23,7 @@ public class MessageController {
     private final MessageService messageService;
     private final ObjectMapper objectMapper;
 
-    @PostMapping(value = "/one-to-one/send", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/oneToOne/send", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> sendOneToOneMessage(@RequestParam String sendMessageString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
         try {
             SendMessageRequest sendMessageRequest = objectMapper.readValue(sendMessageString, SendMessageRequest.class);
@@ -33,7 +33,7 @@ public class MessageController {
         }
     }
 
-    @PutMapping("/{messageId}/mark-as-read")
+    @PutMapping("/{messageId}/markAsRead")
     public ResponseEntity<?> markMessageAsRead(@PathVariable Long messageId) {
         try {
             return messageService.markMessageAsRead(messageId);
@@ -61,5 +61,5 @@ public class MessageController {
         }
     }
 
-    
+
 }
