@@ -100,6 +100,42 @@ public class PostController {
         }
     }
 
+    @GetMapping("/GetPostByUser")
+    public ResponseEntity<?> getPostByUser(@RequestParam int page, @RequestParam int size) {
+        try {
+            return postService.getPostByUser(page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/savePost")
+    public ResponseEntity<?> savePost(@RequestParam Long postId) {
+        try {
+            return postService.savePost(postId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/unsavedPost")
+    public ResponseEntity<?> unsavedPost(@RequestParam Long postId) {
+        try {
+            return postService.unsavePost(postId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getSavedPosts")
+    public ResponseEntity<?> getSavedPosts(@RequestParam int page, @RequestParam int size) {
+        try {
+            return postService.getSavedPosts(page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 //    @PostMapping( value = "/createImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    public ResponseEntity<?> createImage(@RequestPart("mediaFiles") List<MultipartFile> files){

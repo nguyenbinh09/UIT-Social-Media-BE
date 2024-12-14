@@ -34,6 +34,7 @@ public class PostService {
     private final PostReactionRepository postReactionRepository;
     private final GroupRepository groupRepository;
     private final GroupMembershipRepository groupMembershipRepository;
+    private final SavedPostRepository savedPostRepository;
 
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -240,6 +241,68 @@ public class PostService {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
         return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap);
+    }
+
+    public ResponseEntity<?> getPostByUser(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Post> posts = postRepository.findByUserId(currentUser.getId(), pageable);
+
+        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
+        Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
+        for (PostReaction reaction : reactions) {
+            reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
+        }
+
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
+    }
+
+    public ResponseEntity<?> savePost(Long postId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You can't save your own post");
+        }
+        if (savedPostRepository.existsByUserIdAndPostId(currentUser.getId(), postId)) {
+            return ResponseEntity.badRequest().body("Post is already saved");
+        }
+        SavedPost savedPost = new SavedPost();
+        savedPost.setUser(currentUser);
+        savedPost.setPost(post);
+        savedPostRepository.save(savedPost);
+        return ResponseEntity.ok().body("Post saved successfully");
+    }
+
+    public ResponseEntity<?> unsavePost(Long postId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You can't unsave your own post");
+        }
+        if (!savedPostRepository.existsByUserIdAndPostId(currentUser.getId(), postId)) {
+            return ResponseEntity.badRequest().body("Post is not saved");
+        }
+        savedPostRepository.deleteByUserIdAndPostId(currentUser.getId(), postId);
+        return ResponseEntity.ok().body("Post unsaved successfully");
+    }
+
+    public ResponseEntity<?> getSavedPosts(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<SavedPost> savedPosts = savedPostRepository.findByUserId(currentUser.getId(), pageable);
+        List<Post> posts = savedPosts.stream().map(SavedPost::getPost).collect(Collectors.toList());
+
+        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
+        Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
+        for (PostReaction reaction : reactions) {
+            reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
+        }
+
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
     }
 
 

@@ -19,12 +19,11 @@ public class UserResponse {
     private List<String> roles;
 
     public UserResponse toDTO(User user) {
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(user.getId());
-        userResponse.setUsername(user.getUsername());
-        userResponse.setEmail(user.getEmail());
-        userResponse.setRoles(user.getRoles().stream().map(role -> role.getName().name()).toList());
-        return userResponse;
+        this.setId(user.getId());
+        this.setUsername(user.getUsername());
+        this.setEmail(user.getEmail());
+        this.setRoles(user.getRoles().stream().map(role -> role.getName().name()).toList());
+        return this;
     }
 
     public List<UserResponse> mapUsersToDTOs(List<User> users) {

@@ -13,8 +13,8 @@ public interface PersonalConversationRepository extends JpaRepository<PersonalCo
     Optional<PersonalConversation> findByUser1IdAndUser2Id(String user1Id, String user2Id);
 
     @Query("SELECT pc FROM PersonalConversation pc WHERE " +
-            "(pc.user1.id = :userId1 AND pc.user2.id = :userId2) OR " +
-            "(pc.user1.id = :userId2 AND pc.user2.id = :userId1)" +
+            "((pc.user1.id = :userId1 AND pc.user2.id = :userId2) OR " +
+            "(pc.user1.id = :userId2 AND pc.user2.id = :userId1)) " +
             "AND pc.isDeleted = false")
     Optional<PersonalConversation> findByUserIds(String userId1, String userId2);
 }
