@@ -54,7 +54,7 @@ public class User extends BaseModel implements UserDetails {
     private List<GroupMembership> groups = new ArrayList<>();
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "profile_id", nullable = false)
+    @JoinColumn(name = "profile_id")
     private Profile profile;
 
     @JsonIgnore
