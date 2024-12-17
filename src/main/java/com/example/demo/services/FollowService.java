@@ -1,5 +1,6 @@
 package com.example.demo.services;
 
+import com.example.demo.dtos.responses.FollowRequestResponse;
 import com.example.demo.enums.FollowRequestStatus;
 import com.example.demo.models.Follow;
 import com.example.demo.models.FollowRequest;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -120,5 +122,15 @@ public class FollowService {
             return ResponseEntity.badRequest().body("The follower is not following you.");
         }
         return ResponseEntity.badRequest().body("Invalid response status.");
+    }
+
+    public ResponseEntity<?> getFollowRequests() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        List<FollowRequest> followRequests = followRequestRepository.findByFollowedIdAndStatus(currentUser.getId(), FollowRequestStatus.PENDING);
+        List<FollowRequestResponse> followRequestResponses = followRequests.stream()
+                .map(followRequest -> new FollowRequestResponse().toDTO(followRequest))
+                .toList();
+        return ResponseEntity.ok(followRequestResponses);
     }
 }

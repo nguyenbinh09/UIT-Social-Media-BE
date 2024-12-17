@@ -21,6 +21,7 @@ public class InformationDetailResponse {
     private String homeTown;
 
     public InformationDetailResponse toDto(InformationDetail informationDetail) {
+        this.setId(informationDetail.getId());
         this.setFullName(informationDetail.getFullName());
         this.setMajor(informationDetail.getMajor());
         this.setSchoolYear(informationDetail.getSchoolYear());

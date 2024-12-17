@@ -43,16 +43,19 @@ public class Post extends BaseModel {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MediaFile> mediaFiles;
 
+    @Column(name = "link")
+    private String link;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "shared_post_id")
-//    private Post sharedPost;
-//
-//    @Column(name = "is_shared", nullable = false)
-//    private Boolean isShared = false;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shared_post_id")
+    private Post sharedPost;
+
+    @Column(name = "is_shared", nullable = false)
+    private Boolean isShared = false;
 
     @Column(name = "is_approved")
     private Boolean isApproved = false;

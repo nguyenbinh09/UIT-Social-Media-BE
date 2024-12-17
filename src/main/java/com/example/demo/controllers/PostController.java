@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.dtos.requests.CreatePostRequest;
+import com.example.demo.dtos.requests.SharePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.enums.InvitationStatus;
 import com.example.demo.models.Post;
@@ -136,13 +137,12 @@ public class PostController {
         }
     }
 
-
-//    @PostMapping( value = "/createImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    public ResponseEntity<?> createImage(@RequestPart("mediaFiles") List<MultipartFile> files){
-//        try {
-//            return ResponseEntity.ok(postService.createImage(files));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
+    @PostMapping("/sharePost")
+    public ResponseEntity<?> sharePost(@RequestBody SharePostRequest sharePostRequest) {
+        try {
+            return postService.sharePost(sharePostRequest);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

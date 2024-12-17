@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.CreatePostRequest;
+import com.example.demo.dtos.requests.SharePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.enums.*;
@@ -111,6 +112,7 @@ public class PostService {
         return ResponseEntity.ok().body("Post updated successfully");
     }
 
+    @Transactional
     public ResponseEntity<?> deletePost(Long postId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -123,6 +125,7 @@ public class PostService {
         return ResponseEntity.ok().body("Post deleted successfully");
     }
 
+    @Transactional
     public ResponseEntity<?> createGroupPost(Long groupId, CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -158,6 +161,7 @@ public class PostService {
         return ResponseEntity.ok().body("Post created successfully");
     }
 
+    @Transactional
     public ResponseEntity<?> reviewPostInGroup(Long postId, boolean isApproved) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -258,6 +262,7 @@ public class PostService {
         return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
     }
 
+    @Transactional
     public ResponseEntity<?> savePost(Long postId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -275,6 +280,7 @@ public class PostService {
         return ResponseEntity.ok().body("Post saved successfully");
     }
 
+    @Transactional
     public ResponseEntity<?> unsavePost(Long postId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -292,7 +298,7 @@ public class PostService {
     public ResponseEntity<?> getSavedPosts(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("savedAt").descending());
         List<SavedPost> savedPosts = savedPostRepository.findByUserId(currentUser.getId(), pageable);
         List<Post> posts = savedPosts.stream().map(SavedPost::getPost).collect(Collectors.toList());
 
@@ -303,6 +309,25 @@ public class PostService {
         }
 
         return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
+    }
+
+    public ResponseEntity<?> sharePost(SharePostRequest sharePostRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(sharePostRequest.getOriginalPostId()).orElseThrow(() -> new RuntimeException("Post not found"));
+        Privacy privacy = privacyRepository.findById(sharePostRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
+        if (post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You can't share your own post");
+        }
+        Post sharedPost = new Post();
+        sharedPost.setTitle(sharePostRequest.getTitle());
+        sharedPost.setTextContent(sharePostRequest.getAdditionalContent());
+        sharedPost.setUser(currentUser);
+        sharedPost.setPrivacy(privacy);
+        sharedPost.setIsShared(true);
+        sharedPost.setSharedPost(post);
+        postRepository.save(sharedPost);
+        return ResponseEntity.ok().body("Post shared successfully");
     }
 
 
