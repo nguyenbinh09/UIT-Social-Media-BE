@@ -46,14 +46,14 @@ public class ProfileController {
         }
     }
 
-    @PutMapping("/set-default-profile-image")
-    public ResponseEntity<?> setDefaultProfileImage(@RequestParam ProfileImageType profileImageType) {
-        try {
-            return profileService.setDefaultProfileImage(profileImageType);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PutMapping("/set-default-profile-image")
+//    public ResponseEntity<?> setDefaultProfileImage(@RequestParam ProfileImageType profileImageType) {
+//        try {
+//            return profileService.setDefaultProfileImage(profileImageType);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     @PutMapping("/update-information-detail")
     public ResponseEntity<?> updateInformationDetail(@RequestBody UpdateInfoDetailRequest updateInfoDetailRequest) {

@@ -15,6 +15,7 @@ public class ContactResponse {
     private String address;
 
     public ContactResponse toDTO(Contact contact) {
+        this.setId(contact.getId());
         this.setEmail(contact.getEmailToContact());
         this.setPhoneNumber(contact.getPhoneNumber());
         this.setAddress(contact.getAddress());

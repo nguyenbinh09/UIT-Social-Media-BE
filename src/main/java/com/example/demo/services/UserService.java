@@ -1,5 +1,6 @@
 package com.example.demo.services;
 
+import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
 import lombok.AllArgsConstructor;
@@ -20,7 +21,9 @@ public class UserService {
     public ResponseEntity<?> getMe() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(currentUser);
+
+        UserResponse userResponse = new UserResponse().toDTO(currentUser);
+        return ResponseEntity.ok(userResponse);
     }
 
     public ResponseEntity<?> getAllUsers() {

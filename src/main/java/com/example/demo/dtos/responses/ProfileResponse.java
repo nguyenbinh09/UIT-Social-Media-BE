@@ -34,7 +34,11 @@ public class ProfileResponse {
         this.setGender(profile.getGender());
         this.setBio(profile.getBio());
         this.setAvatarUrl(profile.getProfileAvatar().getUrl());
-        this.setCoverImageUrl(profile.getProfileBackground().getUrl());
+        if (profile.getProfileBackground() != null) {
+            this.setCoverImageUrl(profile.getProfileBackground().getUrl());
+        } else {
+            this.setCoverImageUrl(null);
+        }
         this.setInformationDetail(new InformationDetailResponse().toDto(profile.getInformationDetail()));
         this.setIsPrivate(profile.getIsPrivate());
         this.setContact(new ContactResponse().toDTO(profile.getContact()));

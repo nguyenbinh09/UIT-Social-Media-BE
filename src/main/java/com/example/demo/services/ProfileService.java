@@ -6,10 +6,7 @@ import com.example.demo.enums.GenderType;
 import com.example.demo.enums.MediaType;
 import com.example.demo.enums.ProfileImageType;
 import com.example.demo.models.*;
-import com.example.demo.repositories.ContactRepository;
-import com.example.demo.repositories.InformationDetailRepository;
-import com.example.demo.repositories.MediaFileRepository;
-import com.example.demo.repositories.ProfileRepository;
+import com.example.demo.repositories.*;
 import com.example.demo.utils.MediaFIleUtils;
 import com.google.cloud.storage.Blob;
 import jakarta.transaction.Transactional;
@@ -20,6 +17,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.swing.text.html.Option;
+import java.util.Optional;
+
 @Service
 @AllArgsConstructor
 public class ProfileService {
@@ -28,11 +28,20 @@ public class ProfileService {
     private final ContactRepository contactRepository;
     private final MediaFileRepository mediaFileRepository;
     private final FirebaseService firebaseService;
+    private final UserRepository userRepository;
 
     @Transactional
     public ResponseEntity<?> createProfile(CreateProfileRequest createProfileRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
+
+        if (profileRepository.existsByTagName(createProfileRequest.getTagName())) {
+            throw new RuntimeException("Tag name already exists. Please choose another.");
+        }
+
+        if (currentUser.getProfile() != null) {
+            throw new RuntimeException("Profile already exists");
+        }
 
         Profile profile = new Profile();
         InformationDetail informationDetail = new InformationDetail();
@@ -44,10 +53,18 @@ public class ProfileService {
         profile.setBirthDate(createProfileRequest.getBirthday());
         profile.setGender(createProfileRequest.getGender());
         if (profile.getGender() == GenderType.FEMALE) {
-            MediaFile avatar = mediaFileRepository.findByFileName("female-default-avatar.png");
+            MediaFile avatar = new MediaFile();
+            avatar.setFileName("male-default-avatar.png");
+            String maleDefaultAvatar = "https://firebasestorage.googleapis.com/v0/b/uit-social-network-f592d.appspot.com/o/male-default-avatar.png?alt=media&token=7e8f5970-35fa-4d3d-97ae-361dfb91903d";
+            avatar.setUrl(maleDefaultAvatar);
+            avatar.setMediaType(MediaType.IMAGE);
             profile.setProfileAvatar(avatar);
         } else if (profile.getGender() == GenderType.MALE) {
-            MediaFile avatar = mediaFileRepository.findByFileName("male-default-avatar.png");
+            MediaFile avatar = new MediaFile();
+            avatar.setFileName("female-default-avatar.png");
+            String femaleDefaultAvatar = "https://firebasestorage.googleapis.com/v0/b/uit-social-network-f592d.appspot.com/o/female-default-avatar.png?alt=media&token=248e1df8-df98-44ba-803b-56e620f1c762";
+            avatar.setUrl(femaleDefaultAvatar);
+            avatar.setMediaType(MediaType.IMAGE);
             profile.setProfileAvatar(avatar);
         }
 
@@ -61,15 +78,20 @@ public class ProfileService {
         contact.setAddress(createProfileRequest.getAddress());
         profile.setContact(contact);
 
-        currentUser.setProfile(profile);
+        Profile savedProfile = profileRepository.save(profile);
 
-        profileRepository.save(profile);
+        currentUser.setProfile(savedProfile);
+        userRepository.save(currentUser);
         return ResponseEntity.ok("Profile created successfully");
     }
 
     public ResponseEntity<?> getProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
+
+        if (currentUser.getProfile() == null) {
+            return null;
+        }
 
         Profile profile = profileRepository.findById(currentUser.getProfile().getId()).orElseThrow(() -> new RuntimeException("Profile not found"));
         ProfileResponse profileResponse = new ProfileResponse().toDTO(profile);
@@ -106,25 +128,25 @@ public class ProfileService {
     }
 
 
-    public ResponseEntity<?> setDefaultProfileImage(ProfileImageType profileImageType) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
-        Profile profile = profileRepository.findById(currentUser.getProfile().getId()).orElseThrow(() -> new RuntimeException("Profile not found"));
-
-        if (profileImageType == ProfileImageType.AVATAR) {
-            if (profile.getGender() == GenderType.FEMALE) {
-                MediaFile avatar = mediaFileRepository.findByFileName("female-default-avatar.png");
-                profile.setProfileAvatar(avatar);
-            } else if (profile.getGender() == GenderType.MALE) {
-                MediaFile avatar = mediaFileRepository.findByFileName("male-default-avatar.png");
-                profile.setProfileAvatar(avatar);
-            }
-        } else if (profileImageType == ProfileImageType.BACKGROUND) {
-            profile.setProfileBackground(null);
-        }
-        profileRepository.save(profile);
-        return ResponseEntity.ok("Default profile image set successfully");
-    }
+//    public ResponseEntity<?> setDefaultProfileImage(ProfileImageType profileImageType) {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        User currentUser = (User) authentication.getPrincipal();
+//        Profile profile = profileRepository.findById(currentUser.getProfile().getId()).orElseThrow(() -> new RuntimeException("Profile not found"));
+//
+//        if (profileImageType == ProfileImageType.AVATAR) {
+//            if (profile.getGender() == GenderType.FEMALE) {
+//                MediaFile avatar = mediaFileRepository.findByFileName("female-default-avatar.png");
+//                profile.setProfileAvatar(avatar);
+//            } else if (profile.getGender() == GenderType.MALE) {
+//                MediaFile avatar = mediaFileRepository.findByFileName("male-default-avatar.png");
+//                profile.setProfileAvatar(avatar);
+//            }
+//        } else if (profileImageType == ProfileImageType.BACKGROUND) {
+//            profile.setProfileBackground(null);
+//        }
+//        profileRepository.save(profile);
+//        return ResponseEntity.ok("Default profile image set successfully");
+//    }
 
 
     public ResponseEntity<?> updateInformationDetail(UpdateInfoDetailRequest updateInfoDetailRequest) {

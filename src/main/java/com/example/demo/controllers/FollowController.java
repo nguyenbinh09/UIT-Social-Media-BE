@@ -36,6 +36,15 @@ public class FollowController {
         }
     }
 
+    @GetMapping("/get-follow-requests")
+    public ResponseEntity<?> getFollowRequests() {
+        try {
+            return followService.getFollowRequests();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 //    @GetMapping("/isFollowing")
 //    public ResponseEntity<?> isFollowing(@RequestParam String followedId) {
 //        try {

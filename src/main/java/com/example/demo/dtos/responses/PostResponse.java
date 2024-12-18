@@ -26,6 +26,8 @@ public class PostResponse {
     private List<String> mediaFiles;
     private ReactionTypeName reactionType;
     private LocalDateTime createdAt;
+    private PostResponse sharedPost;
+    private Boolean isSaved;
 
     public PostResponse toDTO(Post post) {
         this.setId(post.getId());
@@ -38,6 +40,8 @@ public class PostResponse {
         }
         this.setMediaFiles(post.getMediaFiles().stream().map(MediaFile::getUrl).toList());
         this.setCreatedAt(post.getCreatedAt());
+        if (post.getIsShared())
+            this.setSharedPost(new PostResponse().toDTO(post.getSharedPost()));
         return this;
     }
 
