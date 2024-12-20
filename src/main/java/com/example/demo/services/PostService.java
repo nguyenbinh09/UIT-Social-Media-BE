@@ -64,6 +64,7 @@ public class PostService {
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
+        post.setLink(postRequest.getLink());
         Post savedPost = postRepository.save(post);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {

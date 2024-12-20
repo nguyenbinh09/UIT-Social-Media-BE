@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -35,13 +36,13 @@ public class Post extends BaseModel {
     private Privacy privacy;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<PostReaction> reactions;
+    private List<PostReaction> reactions = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Comment> comments;
+    private List<Comment> comments = new ArrayList<>();
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<MediaFile> mediaFiles;
+    private List<MediaFile> mediaFiles = new ArrayList<>();
 
     @Column(name = "link")
     private String link;

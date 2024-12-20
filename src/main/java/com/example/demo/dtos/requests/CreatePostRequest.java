@@ -12,4 +12,5 @@ public class CreatePostRequest {
     private String textContent;
     private String title;
     private Long privacyId;
+    private String link;
 }
