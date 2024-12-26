@@ -9,6 +9,7 @@ import com.example.demo.models.*;
 import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -36,6 +37,9 @@ public class PostService {
     private final GroupRepository groupRepository;
     private final GroupMembershipRepository groupMembershipRepository;
     private final SavedPostRepository savedPostRepository;
+    private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
+    private final ProfileRepository profileRepository;
 
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -72,17 +76,32 @@ public class PostService {
         }
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
-        firebaseService.pushPostToReceivers(savedPost, followerIds);
-
+//        firebaseService.pushPostToReceivers(savedPost, followerIds);
         for (String followerId : followerIds) {
             User follower = userRepository.findById(followerId)
                     .orElseThrow(() -> new RuntimeException("Follower not found"));
+            String title = currentUser.getUsername() + " created a new post";
+            String message = savedPost.getTitle();
+            Profile profile = profileRepository.findById(currentUser.getProfile().getId())
+                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            String avatar = profile.getProfileAvatar().getUrl();
+
+            Notification notification = new Notification();
+            notification.setSender(currentUser);
+            notification.setReceiver(follower);
+            notification.setType(NotificationType.POST);
+            notification.setMessage(message);
+            notification.setActionUrl("/posts/" + savedPost.getId());
+            notificationRepository.save(notification);
+
+            firebaseService.pushNotificationToUser(notification, follower);
 
             if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
-                String title = currentUser.getUsername() + " created a new post";
-                String message = savedPost.getTitle();
-
-                firebaseService.sendNotificationToUser(follower.getFcmToken(), title, message);
+                Map<String, String> dataPayload = Map.of(
+                        "type", NotificationType.POST.name(),
+                        "postId", savedPost.getId().toString()
+                );
+                notificationService.sendNotification(follower.getFcmToken(), title, message, avatar, dataPayload);
             }
         }
         return ResponseEntity.ok().body("Post created successfully");
@@ -147,16 +166,37 @@ public class PostService {
             savedPost.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
         }
 
-        List<GroupMembership> adminMembers = groupMembershipRepository.findAdminsByGroupId(group.getId());
+        List<GroupMembership> adminMembers = groupMembershipRepository.findAdminsByGroupId(group.getId(), RoleName.ADMIN);
         List<String> memberIds = adminMembers.stream().map(member -> member.getUser().getId()).toList();
 
         List<User> groupAdmins = userRepository.findAllUsersByIdIn(memberIds);
         for (User member : groupAdmins) {
-            if (member.getFcmToken() != null && !member.getId().equals(currentUser.getId())) {
-                String title = currentUser.getUsername() + " created a new post in " + group.getName() + " group";
-                String message = savedPost.getTitle();
+            if (!member.getId().equals(currentUser.getId())) {
+                String title = "New post in " + group.getName() + " group";
+                String message = currentUser.getUsername() + " created a new post in " + group.getName() + " group";
+                Profile profile = profileRepository.findById(currentUser.getProfile().getId())
+                        .orElseThrow(() -> new RuntimeException("Profile not found"));
+                String avatar = profile.getProfileAvatar().getUrl();
+                String actionUrl = "/group/" + group.getId() + "/posts/" + savedPost.getId();
 
-//                firebaseService.sendNotificationToUser(member.getFcmToken(), title, message);
+                Notification notification = new Notification();
+                notification.setSender(currentUser);
+                notification.setReceiver(member);
+                notification.setType(NotificationType.POST);
+                notification.setMessage(message);
+                notification.setActionUrl(actionUrl);
+                notificationRepository.save(notification);
+
+                firebaseService.pushNotificationToUser(notification, member);
+
+                if (member.getFcmToken() != null && !member.getId().equals(currentUser.getId())) {
+                    Map<String, String> dataPayload = Map.of(
+                            "type", NotificationType.POST.name(),
+                            "postId", savedPost.getId().toString()
+                    );
+
+                    notificationService.sendNotification(member.getFcmToken(), title, message, avatar, dataPayload);
+                }
             }
         }
         return ResponseEntity.ok().body("Post created successfully");
@@ -182,25 +222,93 @@ public class PostService {
         if (isApproved) {
             List<GroupMembership> members = groupMembershipRepository.findAllByGroupId(group.getId());
             List<String> memberIds = members.stream().map(member -> member.getUser().getId()).toList();
-            firebaseService.pushPostToReceivers(post, memberIds);
+//            firebaseService.pushPostToReceivers(post, memberIds);
 
             List<User> users = userRepository.findAllUsersByIdIn(memberIds);
             for (User member : users) {
-                if (member.getFcmToken() != null) {
-                    if (!member.getId().equals(post.getUser().getId())) {
-                        String title = post.getUser().getUsername() + " created a new post in  " + group.getName() + " group";
-                        String message = post.getTitle();
+                if (!member.getId().equals(post.getUser().getId())) {
+                    String title = post.getUser().getUsername() + " created a new post in  " + group.getName() + " group";
+                    String message = post.getTitle();
+                    Profile profile = profileRepository.findById(post.getUser().getProfile().getId())
+                            .orElseThrow(() -> new RuntimeException("Profile not found"));
+                    String avatar = profile.getProfileAvatar().getUrl();
+                    String actionUrl = "/posts/" + post.getId();
 
-//                        firebaseService.sendNotificationToUser(member.getFcmToken(), title, message);
-                    } else {
-//                        firebaseService.sendNotificationToUser(post.getUser().getFcmToken(), "Post is approved", "Your post is approved");
+                    Notification notification = new Notification();
+                    notification.setSender(post.getUser());
+                    notification.setGroup(group);
+                    notification.setReceiver(member);
+                    notification.setType(NotificationType.POST);
+                    notification.setMessage(message);
+                    notification.setActionUrl(actionUrl);
+                    notificationRepository.save(notification);
+                    if (member.getFcmToken() != null) {
+                        Map<String, String> dataPayload = Map.of(
+                                "type", NotificationType.POST.name(),
+                                "postId", post.getId().toString(),
+                                "actionUrl", actionUrl,
+                                "GroupId", group.getId().toString()
+                        );
+                        notificationService.sendNotification(member.getFcmToken(), title, message, avatar, dataPayload);
+                    }
+
+                } else {
+                    String title = "Your post is approved";
+                    String message = "Your post is approved in " + group.getName() + " group";
+                    Profile profile = profileRepository.findById(currentUser.getProfile().getId())
+                            .orElseThrow(() -> new RuntimeException("Profile not found"));
+                    String avatar = profile.getProfileAvatar().getUrl();
+                    String actionUrl = "/posts/" + post.getId();
+
+                    Notification notification = new Notification();
+                    notification.setSender(currentUser);
+                    notification.setGroup(group);
+                    notification.setReceiver(post.getUser());
+                    notification.setType(NotificationType.POST);
+                    notification.setMessage(message);
+                    notification.setActionUrl(actionUrl);
+                    notificationRepository.save(notification);
+
+                    firebaseService.pushNotificationToUser(notification, member);
+
+                    if (member.getFcmToken() != null) {
+                        Map<String, String> dataPayload = Map.of(
+                                "type", NotificationType.POST.name(),
+                                "postId", post.getId().toString(),
+                                "actionUrl", actionUrl,
+                                "GroupId", group.getId().toString()
+                        );
+                        notificationService.sendNotification(post.getUser().getFcmToken(), title, message, avatar, dataPayload);
                     }
                 }
             }
             post.setIsApproved(true);
         } else {
             post.setIsApproved(false);
-//            firebaseService.sendNotificationToUser(post.getUser().getFcmToken(), "Post is rejected", "Your post is rejected");
+            String title = "Your post is rejected";
+            String message = "Your post is rejected from " + group.getName() + " group";
+            Profile profile = profileRepository.findById(currentUser.getProfile().getId())
+                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            String avatar = profile.getProfileAvatar().getUrl();
+            String actionUrl = "/posts/" + post.getId();
+
+            Notification notification = new Notification();
+            notification.setSender(currentUser);
+            notification.setGroup(group);
+            notification.setReceiver(post.getUser());
+            notification.setType(NotificationType.POST);
+            notification.setMessage(message);
+            notification.setActionUrl(actionUrl);
+            notificationRepository.save(notification);
+
+            firebaseService.pushNotificationToUser(notification, post.getUser());
+
+            if (post.getUser().getFcmToken() != null) {
+                Map<String, String> dataPayload = Map.of(
+                        "type", NotificationType.POST.name()
+                );
+                notificationService.sendNotification(post.getUser().getFcmToken(), title, message, avatar, dataPayload);
+            }
         }
         postRepository.save(post);
         return ResponseEntity.ok().body("Post reviewed successfully");
@@ -211,7 +319,7 @@ public class PostService {
         User currentUser = (User) authentication.getPrincipal();
 
         Post post = postRepository.findById(postId)
-                .filter(p -> !p.getIsDeleted()) // Filter out deleted posts
+                .filter(p -> !p.getIsDeleted())
                 .orElseThrow(() -> new RuntimeException("Post not found or has been deleted"));
 
         Optional<PostReaction> postReaction = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId());

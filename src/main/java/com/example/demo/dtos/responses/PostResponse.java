@@ -23,11 +23,13 @@ public class PostResponse {
     private PrivacyResponse privacy;
     private UserResponse user;
     private GroupResponse group;
-    private List<String> mediaFiles;
+    private List<MediaFileResponse> mediaFiles;
     private ReactionTypeName reactionType;
     private LocalDateTime createdAt;
     private PostResponse sharedPost;
     private Boolean isSaved;
+    private int reactionCount;
+    private int commentCount;
 
     public PostResponse toDTO(Post post) {
         this.setId(post.getId());
@@ -38,7 +40,10 @@ public class PostResponse {
         if (post.getGroup() != null) {
             this.setGroup(new GroupResponse().toDTO(post.getGroup()));
         }
-        this.setMediaFiles(post.getMediaFiles().stream().map(MediaFile::getUrl).toList());
+        this.setMediaFiles(new MediaFileResponse().mapsToDto(post.getMediaFiles()));
+        this.setReactionCount(post.getReactions().size());
+        this.setCommentCount(post.getComments().size());
+
         this.setCreatedAt(post.getCreatedAt());
         if (post.getIsShared())
             this.setSharedPost(new PostResponse().toDTO(post.getSharedPost()));

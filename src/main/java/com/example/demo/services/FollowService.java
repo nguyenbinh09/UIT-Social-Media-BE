@@ -1,13 +1,11 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.responses.FollowRequestResponse;
+import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.FollowRequestStatus;
-import com.example.demo.models.Follow;
-import com.example.demo.models.FollowRequest;
-import com.example.demo.models.User;
-import com.example.demo.repositories.FollowRepository;
-import com.example.demo.repositories.FollowRequestRepository;
-import com.example.demo.repositories.UserRepository;
+import com.example.demo.enums.NotificationType;
+import com.example.demo.models.*;
+import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -26,6 +26,9 @@ public class FollowService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final FollowRequestRepository followRequestRepository;
+    private final ProfileRepository profileRepository;
+    private final FirebaseService firebaseService;
+    private final NotificationRepository notificationRepository;
 
     @Transactional
     public ResponseEntity<?> followUser(String followedId) {
@@ -63,7 +66,18 @@ public class FollowService {
             newFollowRequest.setFollow(follow);
             followRequestRepository.save(newFollowRequest);
 
-            //        notificationService.sendNotification(follow.getFollowed().getFcmToken(), "Follow Request", currentUser.getUsername() + " sent you a follow request.");
+            String message = currentUser.getUsername() + "has followed you. Do you want to respond the follow request?";
+            String actionUrl = "/follow-requests/" + newFollowRequest.getId();
+
+            Notification notification = new Notification();
+            notification.setSender(currentUser);
+            notification.setReceiver(followedUser);
+            notification.setType(NotificationType.FOLLOW_REQUEST);
+            notification.setMessage(message);
+            notification.setActionUrl(actionUrl);
+            notificationRepository.save(notification);
+
+            firebaseService.pushNotificationToUser(notification, followedUser);
         }
         return ResponseEntity.ok("Successfully followed the user.");
     }
@@ -101,27 +115,35 @@ public class FollowService {
         }
         Optional<Follow> existingFollow = followRepository.findByFollowerIdAndFollowedId(followRequest.getFollower().getId(), currentUser.getId());
         if (existingFollow.isPresent()) {
+            User followedUser = userRepository.findById(followRequest.getFollower().getId())
+                    .orElseThrow(() -> new RuntimeException("Follower not found"));
             if (responseStatus == FollowRequestStatus.ACCEPTED && followRequest.getStatus() == FollowRequestStatus.PENDING) {
                 followRequest.setStatus(FollowRequestStatus.ACCEPTED);
                 followRequestRepository.save(followRequest);
-                User followedUser = userRepository.findById(followRequest.getFollower().getId())
-                        .orElseThrow(() -> new RuntimeException("Follower not found"));
 
                 Follow follow = new Follow();
                 follow.setFollower(currentUser);
                 follow.setFollowed(followedUser);
                 followRepository.save(follow);
 
-                return ResponseEntity.ok("Follow request accepted.");
             } else if (responseStatus == FollowRequestStatus.REJECTED && followRequest.getStatus() == FollowRequestStatus.PENDING) {
                 followRequest.setStatus(FollowRequestStatus.REJECTED);
                 followRequestRepository.save(followRequest);
-                return ResponseEntity.ok("Follow request rejected.");
             }
+            String message = currentUser.getUsername() + " has" + followRequest.getStatus().toString().toLowerCase(Locale.ROOT) + " your follow request.";
+
+            Notification notification = new Notification();
+            notification.setSender(currentUser);
+            notification.setReceiver(followedUser);
+            notification.setType(NotificationType.FOLLOW_RESPONSE);
+            notification.setMessage(message);
+            notificationRepository.save(notification);
+
+            firebaseService.pushNotificationToUser(notification, followedUser);
+            return ResponseEntity.ok("Successfully " + followRequest.getStatus().toString().toLowerCase(Locale.ROOT) + " the follow request.");
         } else {
             return ResponseEntity.badRequest().body("The follower is not following you.");
         }
-        return ResponseEntity.badRequest().body("Invalid response status.");
     }
 
     public ResponseEntity<?> getFollowRequests() {
@@ -132,5 +154,31 @@ public class FollowService {
                 .map(followRequest -> new FollowRequestResponse().toDTO(followRequest))
                 .toList();
         return ResponseEntity.ok(followRequestResponses);
+    }
+
+    public ResponseEntity<?> getFollowers() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        List<Follow> followers = followRepository.findByFollowedId(currentUser.getId());
+        List<User> followerUsers = followers.stream()
+                .map(Follow::getFollower)
+                .toList();
+        List<UserResponse> followerUserResponses = followerUsers.stream()
+                .map(user -> new UserResponse().toDTO(user))
+                .toList();
+        return ResponseEntity.ok(followerUserResponses);
+    }
+
+    public ResponseEntity<?> getFollowing() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        List<Follow> following = followRepository.findByFollowerId(currentUser.getId());
+        List<User> followingUsers = following.stream()
+                .map(Follow::getFollowed)
+                .toList();
+        List<UserResponse> followingUserResponses = followingUsers.stream()
+                .map(user -> new UserResponse().toDTO(user))
+                .toList();
+        return ResponseEntity.ok(followingUserResponses);
     }
 }

@@ -62,4 +62,22 @@ public class FollowController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/get-followers")
+    public ResponseEntity<?> getFollowers() {
+        try {
+            return followService.getFollowers();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/get-following")
+    public ResponseEntity<?> getFollowing() {
+        try {
+            return followService.getFollowing();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

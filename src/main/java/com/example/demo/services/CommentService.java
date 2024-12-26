@@ -3,11 +3,9 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.CreateCommentRequest;
 import com.example.demo.dtos.responses.CommentResponse;
 import com.example.demo.enums.FeedItemType;
-import com.example.demo.models.Comment;
-import com.example.demo.models.Post;
-import com.example.demo.models.User;
-import com.example.demo.repositories.CommentRepository;
-import com.example.demo.repositories.PostRepository;
+import com.example.demo.enums.NotificationType;
+import com.example.demo.models.*;
+import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.*;
@@ -32,7 +30,10 @@ public class CommentService {
     private final PostRepository postRepository;
     private final MediaFileService mediaFileService;
     private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
     private final FirebaseService firebaseService;
+    private final ProfileRepository profileRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ResponseEntity<?> createComment(CreateCommentRequest commentRequest, List<MultipartFile> mediaFiles) {
@@ -40,9 +41,11 @@ public class CommentService {
         User currentUser = (User) authentication.getPrincipal();
         Post post = postRepository.findById(commentRequest.getPostId()).orElseThrow(() -> new RuntimeException("Post not found"));
 
+        User commenter = userRepository.findUserWithProfileById(currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Post owner not found"));
         Comment comment = new Comment();
         comment.setTextContent(commentRequest.getContent());
-        comment.setUser(currentUser);
+        comment.setUser(commenter);
         comment.setPost(post);
 
         Comment savedComment = commentRepository.save(comment);
@@ -59,18 +62,43 @@ public class CommentService {
             savedComment.setMediaFiles(mediaFileService.uploadMediaFile(savedComment.getId(), FeedItemType.COMMENT, mediaFiles));
         }
 
-        firebaseService.pushCommentToPostOwner(savedComment);
+        firebaseService.pushCommentToPostOwner(new CommentResponse().toDTO(savedComment));
 
         User postOwner = post.getUser();
-//        notifyUserOfComment(postOwner, savedComment);
+        notifyUserOfComment(postOwner, savedComment, currentUser);
         return ResponseEntity.ok("Comment created successfully");
     }
 
-    public void notifyUserOfComment(User postOwner, Comment comment) {
+    public void notifyUserOfComment(User postOwner, Comment comment, User Commenter) {
         // Notify the post owner if the commenter is not the post owner
         if (!postOwner.getId().equals(comment.getUser().getId())) {
-            String message = "New comment on your post: " + comment.getTextContent();
-            CompletableFuture.runAsync(() -> notificationService.sendNotification(postOwner.getFcmToken(), "New Comment", message));
+            String title = "New Comment";
+            String message = "New comment on your post: \"" + comment.getTextContent() + "\"";
+            Profile profile = profileRepository.findById(Commenter.getProfile().getId())
+                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            String avatar = profile.getProfileAvatar().getUrl();
+            String actionUrl = "/posts/" + comment.getPost().getId();
+
+            Notification notification = new Notification();
+            notification.setSender(Commenter);
+            notification.setReceiver(postOwner);
+            notification.setType(NotificationType.COMMENT);
+            notification.setMessage(message);
+            notification.setActionUrl(actionUrl);
+            notificationRepository.save(notification);
+
+            firebaseService.pushNotificationToUser(notification, postOwner);
+
+            if (postOwner.getFcmToken() != null) {
+                Map<String, String> dataPayload = Map.of(
+                        "type", NotificationType.COMMENT.name(),
+                        "postId", comment.getPost().getId().toString(),
+                        "commentId", comment.getId().toString(),
+                        "actionUrl", actionUrl
+                );
+
+                CompletableFuture.runAsync(() -> notificationService.sendNotification(postOwner.getFcmToken(), title, message, avatar, dataPayload));
+            }
         }
 
         // If this is a reply, notify the owner of the parent comment
@@ -81,13 +109,37 @@ public class CommentService {
             if (!parentCommentOwner.getId().equals(postOwner.getId()) &&
                     !parentCommentOwner.getId().equals(comment.getUser().getId())) {
 
-                String replyMessage = "New reply to your comment: " + comment.getTextContent();
-                CompletableFuture.runAsync(() -> notificationService.sendNotification(parentCommentOwner.getFcmToken(), "New Reply", replyMessage));
+                String title = "New Reply";
+                String replyMessage = "New reply to your comment: \"" + comment.getTextContent() + "\"";
+                Profile profile = profileRepository.findById(Commenter.getProfile().getId())
+                        .orElseThrow(() -> new RuntimeException("Profile not found"));
+                String avatar = profile.getProfileAvatar().getUrl();
+                String actionUrl = "/posts/" + comment.getPost().getId();
+
+                Notification notification = new Notification();
+                notification.setSender(Commenter);
+                notification.setReceiver(parentCommentOwner);
+                notification.setType(NotificationType.REPLY_COMMENT);
+                notification.setMessage(replyMessage);
+                notification.setActionUrl(actionUrl);
+                notificationRepository.save(notification);
+
+                firebaseService.pushNotificationToUser(notification, parentCommentOwner);
+
+                if (parentCommentOwner.getFcmToken() != null) {
+                    Map<String, String> dataPayload = Map.of(
+                            "type", NotificationType.REPLY_COMMENT.name(),
+                            "postId", comment.getPost().getId().toString(),
+                            "commentId", comment.getId().toString(),
+                            "actionUrl", actionUrl
+                    );
+
+                    CompletableFuture.runAsync(() -> notificationService.sendNotification(parentCommentOwner.getFcmToken(), title, replyMessage, avatar, dataPayload));
+                }
             }
         }
     }
 
-    @Transactional
     public ResponseEntity<PagedModel<CommentResponse>> getCommentsWithReplies(Long postId, int page, int size, PagedResourcesAssembler assembler) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Comment> topLevelComments = commentRepository.findByPostIdAndParentCommentIsNull(postId, pageable);
@@ -119,7 +171,6 @@ public class CommentService {
         // Load replies only if the current depth is less than the max depth
         if (currentDepth < maxDepth) {
             List<Comment> replies = repliesMap.get(comment.getId());
-            System.out.println(currentDepth + " " + comment.getId());
             if (replies != null) {
                 commentResponse.setReplies(replies.stream()
                         .map(reply -> toDTOWithDepth(reply, repliesMap, currentDepth + 1, maxDepth))
