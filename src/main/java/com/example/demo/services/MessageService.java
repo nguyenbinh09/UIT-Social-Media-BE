@@ -3,11 +3,9 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.SendGroupMessageRequest;
 import com.example.demo.dtos.requests.SendMessageRequest;
 import com.example.demo.enums.FeedItemType;
+import com.example.demo.enums.NotificationType;
 import com.example.demo.models.*;
-import com.example.demo.repositories.ChatGroupRepository;
-import com.example.demo.repositories.MessageRepository;
-import com.example.demo.repositories.PersonalConversationRepository;
-import com.example.demo.repositories.UserRepository;
+import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -29,6 +28,8 @@ public class MessageService {
     private final MediaFileService mediaFileService;
     private final FollowService followService;
     private final ChatGroupRepository chatGroupRepository;
+    private final NotificationService notificationService;
+    private final ProfileRepository profileRepository;
 
     @Transactional
     public ResponseEntity<?> sendOneToOneMessage(SendMessageRequest sendMessageRequest, List<MultipartFile> mediaFiles) {
@@ -67,6 +68,22 @@ public class MessageService {
         }
 
         firebaseService.pushMessageToReceiver(savedMessage);
+
+        if (receiver.getFcmToken() != null) {
+            String title = "New message from " + sender.getUsername();
+            String messageNotify = "You have a new message from " + sender.getUsername() + ": " + sendMessageRequest.getContent();
+            Profile profile = profileRepository.findById(sender.getProfile().getId())
+                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            String avatar = profile.getProfileAvatar().getUrl();
+            String actionUrl = "/conversations/" + conversation.getId();
+
+            Map<String, String> dataPayload = Map.of(
+                    "type", NotificationType.MESSAGE.name(),
+                    "conversationId", conversation.getId().toString(),
+                    "actionUrl", actionUrl
+            );
+            notificationService.sendNotification(receiver.getFcmToken(), title, messageNotify, avatar, dataPayload);
+        }
 
         return ResponseEntity.ok().body("Message sent successfully");
     }
@@ -139,12 +156,14 @@ public class MessageService {
             savedMessage.setMediaFiles(mediaFileService.uploadMediaFile(savedMessage.getId(), FeedItemType.MESSAGE, mediaFiles));
         }
 
-        List<User> members = chatGroup.getMembers().stream()
-                .map(ChatGroupMember::getUser)
-                .toList();
         firebaseService.pushGroupMessageToMembers(savedMessage);
 
-        CompletableFuture.runAsync(() -> firebaseService.sendFCMNotificationToGroupMembers(savedMessage, members));
+        List<User> members = chatGroup.getMembers().stream()
+                .map(ChatGroupMember::getUser)
+                .filter(user -> !user.getId().equals(sender.getId()))
+                .toList();
+
+        CompletableFuture.runAsync(() -> notificationService.sendFCMNotificationToGroupMembers(savedMessage, members));
         return ResponseEntity.ok("Message sent successfully");
     }
 

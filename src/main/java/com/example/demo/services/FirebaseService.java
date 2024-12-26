@@ -4,6 +4,7 @@ import com.example.demo.dtos.responses.CommentResponse;
 import com.example.demo.dtos.responses.MessageResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.models.Comment;
+import com.example.demo.models.Notification;
 import com.example.demo.models.Post;
 import com.example.demo.models.User;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -20,6 +21,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MulticastMessage;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +54,7 @@ public class FirebaseService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public void pushPostToReceivers(Post post, List<String> receiverIds) {
         PostResponse postResponse = new PostResponse().toDTO(post);
         Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<>() {
@@ -76,21 +79,7 @@ public class FirebaseService {
         }
     }
 
-    public void sendNotificationToUser(String fcmToken, String title, String message) {
-        try {
-            Message firebaseMessage = Message.builder()
-                    .setToken(fcmToken)
-                    .putData("title", title)
-                    .putData("message", message)
-                    .build();
-            FirebaseMessaging.getInstance(firebaseApp).send(firebaseMessage);
-        } catch (FirebaseMessagingException e) {
-            throw new RuntimeException("Failed to send FCM notification", e);
-        }
-    }
-
-    public void pushCommentToPostOwner(Comment comment) {
-        CommentResponse commentResponse = new CommentResponse().toDTO(comment);
+    public void pushCommentToPostOwner(CommentResponse commentResponse) {
         Map<String, Object> commentResponseMap = objectMapper.convertValue(commentResponse, new TypeReference<>() {
         });
 
@@ -200,31 +189,21 @@ public class FirebaseService {
                 .set(messageMap);
     }
 
-    public void sendFCMNotificationToGroupMembers(com.example.demo.models.Message savedMessage, List<User> members) {
-        Map<String, String> notificationData = new HashMap<>();
-        notificationData.put("title", "New Message in " + savedMessage.getChatGroup().getName());
-        notificationData.put("body", savedMessage.getSender().getUsername() + ": " + savedMessage.getContent());
-        notificationData.put("groupId", savedMessage.getChatGroup().getId().toString());
-        notificationData.put("messageId", savedMessage.getId().toString());
+    public void pushNotificationToUser(Notification notification, User user) {
+        String groupId = notification.getGroup() != null ? notification.getGroup().getId().toString() : "";
 
-        List<String> tokens = members.stream()
-                .filter(user -> !user.getId().equals(savedMessage.getSender().getId())) // Không gửi cho người gửi
-                .map(User::getFcmToken)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        Map<String, Object> notificationData = Map.of(
+                "message", notification.getMessage(),
+                "createdAt", notification.getCreatedAt().toEpochSecond(ZoneOffset.UTC),
+                "type", notification.getType().name(),
+                "actionUrl", notification.getActionUrl(),
+                "sender", notification.getSender().getId(),
+                "group", groupId
+        );
 
-        if (!tokens.isEmpty()) {
-            try {
-                FirebaseMessaging.getInstance().sendMulticast(
-                        MulticastMessage.builder()
-                                .putAllData(notificationData)
-                                .addAllTokens(tokens)
-                                .build()
-                );
-            } catch (FirebaseMessagingException e) {
-                e.printStackTrace();
-                throw new RuntimeException("Error sending FCM notification to group");
-            }
-        }
+        firestore.collection("notifications")
+                .document(user.getId())
+                .collection("user_notifications")
+                .add(notificationData);
     }
 }

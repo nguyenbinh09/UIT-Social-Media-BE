@@ -51,7 +51,7 @@ public class Profile extends BaseModel {
     @Column(name = "is_private")
     private Boolean isPrivate = false;
 
-    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "profile", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Skill> skills;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)

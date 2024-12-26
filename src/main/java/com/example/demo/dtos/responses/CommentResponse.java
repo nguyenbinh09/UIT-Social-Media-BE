@@ -5,6 +5,7 @@ import com.example.demo.models.MediaFile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.Hibernate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +24,7 @@ public class CommentResponse {
     private List<CommentResponse> replies;
     private List<String> mediaFiles;
     private LocalDateTime createdAt;
+    private int replyCount;
 
     public CommentResponse toDTO(Comment comment) {
         this.setId(comment.getId());
@@ -34,10 +36,10 @@ public class CommentResponse {
         } else {
             this.setParentId(null);
         }
-
         this.setTextContent(comment.getTextContent());
         this.setMediaFiles(comment.getMediaFiles().stream().map(MediaFile::getUrl).toList());
         this.setCreatedAt(comment.getCreatedAt());
+        this.setReplyCount(comment.getReplies() != null ? comment.getReplies().size() : 0);
         return this;
     }
 
