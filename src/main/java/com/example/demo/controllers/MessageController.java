@@ -61,5 +61,40 @@ public class MessageController {
         }
     }
 
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<?> getGroupMessages(@PathVariable Long groupId, @RequestParam int page, @RequestParam int size) {
+        try {
+            return messageService.getGroupMessages(groupId, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/conversation/{conversationId}")
+    public ResponseEntity<?> getConversationMessages(@PathVariable Long conversationId, @RequestParam int page, @RequestParam int size) {
+        try {
+            return messageService.getConversationMessages(conversationId, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/pending/conversations")
+    public ResponseEntity<?> getPendingConversations() {
+        try {
+            return messageService.getPendingConversations();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/conversations")
+    public ResponseEntity<?> getConversations(@RequestParam int page, @RequestParam int size) {
+        try {
+            return messageService.getConversations(page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
 }

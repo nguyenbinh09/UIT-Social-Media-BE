@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/users")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
     private final UserService userService;

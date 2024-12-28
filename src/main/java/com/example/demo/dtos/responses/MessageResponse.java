@@ -14,8 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 public class MessageResponse {
     private Long id;
-    private String senderId;
-    private String receiverId;
+    private UserResponse senderId;
+    private UserResponse receiverId;
     private Long chatGroupId;
     private String content;
     private LocalDateTime createdAt;
@@ -23,9 +23,9 @@ public class MessageResponse {
 
     public MessageResponse toDTO(Message message) {
         this.setId(message.getId());
-        this.setSenderId(message.getSender().getId());
+        this.setSenderId(new UserResponse().toDTO(message.getSender()));
         if (message.getReceiver() != null) {
-            this.setReceiverId(message.getReceiver().getId());
+            this.setReceiverId(new UserResponse().toDTO(message.getSender()));
         }
         if (message.getChatGroup() != null) {
             this.setChatGroupId(message.getChatGroup().getId());

@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.CreateChatGroupRequest;
 import com.example.demo.dtos.requests.CreateGroupRequest;
 import com.example.demo.dtos.requests.UpdateChatGroupRequest;
+import com.example.demo.dtos.responses.ChatGroupResponse;
 import com.example.demo.models.ChatGroup;
 import com.example.demo.models.ChatGroupMember;
 import com.example.demo.models.User;
@@ -124,5 +125,17 @@ public class ChatGroupService {
 
     public ResponseEntity<?> updateChatGroup(Long chatGroupId, UpdateChatGroupRequest updateChatGroupRequest, MultipartFile avatarImage) {
         return null;
+    }
+
+    public ResponseEntity<?> getChatGroups(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+
+        List<ChatGroup> chatGroups = chatGroupRepository.findChatGroupsWithLatestMessages(currentUser.getId());
+        List<ChatGroupResponse> chatGroupResponses = chatGroups.stream()
+                .map(chatGroup -> new ChatGroupResponse().toDto(chatGroup))
+                .toList();
+
+        return ResponseEntity.ok(chatGroupResponses);
     }
 }

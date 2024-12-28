@@ -45,9 +45,10 @@ public class PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         String followerId = currentUser.getId();
-        List<String> userIds = followRepository.findFollowedIdsByFollowerId(followerId);
+//        List<String> userIds = followRepository.findFollowedIdsByFollowerId(followerId);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        List<Post> posts = postRepository.findByUserIdsAndIsDeletedAndPrivacy(userIds, pageable).getContent();
+        List<Post> posts = postRepository.findAll(pageable).getContent();
+//        List<Post> posts = postRepository.findByUserIdsAndIsDeletedAndPrivacy(userIds, pageable).getContent();
 
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();

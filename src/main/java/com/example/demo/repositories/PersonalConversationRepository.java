@@ -4,8 +4,10 @@ import com.example.demo.models.PersonalConversation;
 import com.example.demo.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,4 +19,13 @@ public interface PersonalConversationRepository extends JpaRepository<PersonalCo
             "(pc.user1.id = :userId2 AND pc.user2.id = :userId1)) " +
             "AND pc.isDeleted = false")
     Optional<PersonalConversation> findByUserIds(String userId1, String userId2);
+
+    @Query("SELECT c FROM PersonalConversation c WHERE c.user1.id = :userId OR c.user2.id = :userId " +
+            "ORDER BY (SELECT MAX(msg.createdAt) FROM Message msg WHERE msg.conversation = c) DESC")
+    List<PersonalConversation> findConversationsWithLatestMessages(@Param("userId") String userId);
+
+    @Query("SELECT c FROM PersonalConversation c WHERE c.user1.id = :id OR c.user2.id = :id " +
+            "AND c.isPending = true " +
+            "ORDER BY (SELECT MAX(msg.createdAt) FROM Message msg WHERE msg.conversation = c) DESC")
+    List<PersonalConversation> findPendingConversationsWithLatestMessages(String id);
 }
