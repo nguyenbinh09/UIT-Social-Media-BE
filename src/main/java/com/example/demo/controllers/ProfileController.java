@@ -90,4 +90,31 @@ public class ProfileController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/get-skills")
+    public ResponseEntity<?> getSkills() {
+        try {
+            return profileService.getSkills();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/profile/{id}")
+    public ResponseEntity<?> getProfileById(@PathVariable Long id) {
+        try {
+            return profileService.getProfileById(id);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/get-profile-by-userid")
+    public ResponseEntity<?> getProfileByUserId(@RequestParam String userId) {
+        try {
+            return profileService.getProfileByUserId(userId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

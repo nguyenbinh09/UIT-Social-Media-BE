@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.requests.*;
 import com.example.demo.dtos.responses.ProfileResponse;
+import com.example.demo.dtos.responses.SkillResponse;
 import com.example.demo.enums.GenderType;
 import com.example.demo.enums.MediaType;
 import com.example.demo.enums.ProfileImageType;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.swing.text.html.Option;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -249,5 +251,34 @@ public class ProfileService {
         profile.getSkills().add(skill);
         profileRepository.save(profile);
         return ResponseEntity.ok("Skill added successfully");
+    }
+
+    public ResponseEntity<?> getSkills() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Profile profile = profileRepository.findById(currentUser.getProfile().getId()).orElseThrow(() -> new RuntimeException("Profile not found"));
+        List<SkillResponse> skillResponses = new SkillResponse().mapSkillsToDTOs(profile.getSkills());
+        return ResponseEntity.ok(skillResponses);
+    }
+
+    public ResponseEntity<?> getProfileById(Long id) {
+        Optional<Profile> profile = profileRepository.findById(id);
+        if (profile.isEmpty()) {
+            throw new RuntimeException("Profile not found");
+        }
+        ProfileResponse profileResponse = new ProfileResponse().toDTO(profile.get());
+        return ResponseEntity.ok(profileResponse);
+    }
+
+    public ResponseEntity<?> getProfileByUserId(String userId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (user.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        if (user.get().getProfile() == null) {
+            throw new RuntimeException("Profile not found");
+        }
+        ProfileResponse profileResponse = new ProfileResponse().toDTO(user.get().getProfile());
+        return ResponseEntity.ok(profileResponse);
     }
 }

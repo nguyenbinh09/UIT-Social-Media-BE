@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/reactions")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
 @SecurityRequirement(name = "bearerAuth")
 public class ReactionController {
     private final ReactionService reactionService;

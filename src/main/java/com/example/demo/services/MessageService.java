@@ -2,12 +2,17 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.requests.SendGroupMessageRequest;
 import com.example.demo.dtos.requests.SendMessageRequest;
+import com.example.demo.dtos.responses.ConversationResponse;
+import com.example.demo.dtos.responses.MessageResponse;
 import com.example.demo.enums.FeedItemType;
 import com.example.demo.enums.NotificationType;
 import com.example.demo.models.*;
 import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,8 +39,10 @@ public class MessageService {
     @Transactional
     public ResponseEntity<?> sendOneToOneMessage(SendMessageRequest sendMessageRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User sender = (User) authentication.getPrincipal();
-        User receiver = userRepository.findById(sendMessageRequest.getReceiverId())
+        User currentUser = (User) authentication.getPrincipal();
+        User sender = userRepository.findUserWithProfileById(currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        User receiver = userRepository.findUserWithProfileById(sendMessageRequest.getReceiverId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (sender.getId().equals(receiver.getId())) {
@@ -44,7 +51,7 @@ public class MessageService {
 
         Boolean isSenderFollowingReceiver = followService.isFollowing(sender.getId(), receiver.getId());
         Boolean isReceiverFollowingSender = followService.isFollowing(receiver.getId(), sender.getId());
-
+ 
         boolean isFollowing = isSenderFollowingReceiver && isReceiverFollowingSender;
         PersonalConversation conversation = personalConversationRepository
                 .findByUserIds(sender.getId(), receiver.getId())
@@ -134,7 +141,9 @@ public class MessageService {
     @Transactional
     public ResponseEntity<?> sendGroupMessage(SendGroupMessageRequest request, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User sender = (User) authentication.getPrincipal();
+        User currentUser = (User) authentication.getPrincipal();
+        User sender = userRepository.findUserWithProfileById(currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         ChatGroup chatGroup = chatGroupRepository.findById(request.getChatGroupId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
@@ -150,6 +159,7 @@ public class MessageService {
         message.setChatGroup(chatGroup);
         message.setContent(request.getMessageContent());
 
+        chatGroup.getMessages().add(message);
         Message savedMessage = messageRepository.save(message);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
@@ -167,4 +177,58 @@ public class MessageService {
         return ResponseEntity.ok("Message sent successfully");
     }
 
+    public ResponseEntity<?> getGroupMessages(Long groupId, int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        ChatGroup chatGroup = chatGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        boolean isMember = chatGroup.getMembers().stream()
+                .anyMatch(member -> member.getUser().getId().equals(currentUser.getId()));
+        if (!isMember) {
+            return ResponseEntity.badRequest().body("You are not a member of this group");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Message> messages = messageRepository.findByChatGroup(chatGroup, pageable);
+        List<MessageResponse> messageResponses = messages.stream()
+                .map(message -> new MessageResponse().toDTO(message))
+                .toList();
+        return ResponseEntity.ok(messageResponses);
+    }
+
+    public ResponseEntity<?> getConversationMessages(Long conversationId, int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        PersonalConversation conversation = personalConversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        if (!conversation.getUser1().getId().equals(currentUser.getId()) && !conversation.getUser2().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You are not a part of this conversation");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Message> messages = messageRepository.findByConversationId(conversationId, pageable);
+        List<MessageResponse> messageResponses = messages.stream()
+                .map(message -> new MessageResponse().toDTO(message))
+                .toList();
+        return ResponseEntity.ok(messageResponses);
+    }
+
+    public ResponseEntity<?> getPendingConversations() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        List<PersonalConversation> conversations = personalConversationRepository.findPendingConversationsWithLatestMessages(currentUser.getId());
+        return ResponseEntity.ok(conversations);
+    }
+
+    public ResponseEntity<?> getConversations(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        List<PersonalConversation> conversations = personalConversationRepository.findConversationsWithLatestMessages(currentUser.getId());
+        List<ConversationResponse> conversationResponses = conversations.stream()
+                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId()))
+                .toList();
+        return ResponseEntity.ok(conversationResponses);
+    }
 }

@@ -60,4 +60,13 @@ public class ChatGroupController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/getChatGroups")
+    public ResponseEntity<?> getChatGroups(@RequestParam int page, @RequestParam int size) {
+        try {
+            return chatGroupService.getChatGroups(page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
