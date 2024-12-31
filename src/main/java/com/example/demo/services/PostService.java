@@ -44,7 +44,7 @@ public class PostService {
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        String followerId = currentUser.getId();
+//        String followerId = currentUser.getId();
 //        List<String> userIds = followRepository.findFollowedIdsByFollowerId(followerId);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findAll(pageable).getContent();
