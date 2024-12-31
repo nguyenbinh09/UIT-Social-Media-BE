@@ -27,6 +27,6 @@ public class UserService {
     }
 
     public ResponseEntity<?> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+        return ResponseEntity.ok(new UserResponse().mapUsersToDTOs(userRepository.findAll()));
     }
 }
