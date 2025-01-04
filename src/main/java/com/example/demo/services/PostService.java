@@ -50,12 +50,14 @@ public class PostService {
         List<Post> posts = postRepository.findAll(pageable).getContent();
 //        List<Post> posts = postRepository.findByUserIdsAndIsDeletedAndPrivacy(userIds, pageable).getContent();
 
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
     }
 
     @Transactional
@@ -349,12 +351,14 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findByGroupIdAndIsDeleted(groupId, pageable);
 
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
     }
 
     public ResponseEntity<?> getPostByUser(int page, int size) {
@@ -363,13 +367,15 @@ public class PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findByUserId(currentUser.getId(), pageable);
 
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds));
     }
 
     @Transactional
@@ -412,13 +418,15 @@ public class PostService {
         List<SavedPost> savedPosts = savedPostRepository.findByUserId(currentUser.getId(), pageable);
         List<Post> posts = savedPosts.stream().map(SavedPost::getPost).collect(Collectors.toList());
 
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap));
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds));
     }
 
     public ResponseEntity<?> sharePost(SharePostRequest sharePostRequest) {

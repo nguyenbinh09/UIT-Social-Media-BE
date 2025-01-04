@@ -28,6 +28,7 @@ public class SearchRepository {
     private final PostReactionRepository postReactionRepository;
     @PersistenceContext
     private EntityManager entityManager;
+    private final SavedPostRepository savedPostRepository;
 
     public List<PostResponse> searchPosts(String keyword, User currentUser) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -40,13 +41,15 @@ public class SearchRepository {
         query.select(root).where(cb.or(titlePredicate, contentPredicate));
         List<Post> posts = entityManager.createQuery(query).getResultList();
 
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+
         List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
     }
 
     public List<UserResponse> searchUsers(String keyword) {

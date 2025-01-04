@@ -31,6 +31,9 @@ public class Post extends BaseModel {
     @Column(name = "title")
     private String title;
 
+//    @Column(name = "topic")
+//    private String topic;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "privacy_id")
     private Privacy privacy;

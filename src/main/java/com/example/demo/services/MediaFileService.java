@@ -33,11 +33,12 @@ public class MediaFileService {
         for (MultipartFile file : mediaFiles) {
             MediaFile mediaFile = new MediaFile();
             MediaType mediaType = MediaFIleUtils.determineMediaType(file);
-            Blob fileBlob = FirebaseService.uploadFile(file);
+            String mediaURL = FirebaseService.uploadFile(file);
 
-            mediaFile.setFileName(fileBlob.getName());
-            mediaFile.setUrl(fileBlob.getMediaLink());
+            mediaFile.setFileName(file.getOriginalFilename());
+            mediaFile.setUrl(mediaURL);
             mediaFile.setMediaType(mediaType);
+            mediaFile.setSize(file.getSize() / 1024F);
             switch (feedItemType) {
                 case POST:
                     Post post = postRepository.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));

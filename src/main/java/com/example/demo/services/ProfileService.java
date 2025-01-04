@@ -113,16 +113,18 @@ public class ProfileService {
         Profile profile = profileRepository.findById(currentUser.getProfile().getId()).orElseThrow(() -> new RuntimeException("Profile not found"));
         MediaFile mediaFile = new MediaFile();
         if (profileImageType == ProfileImageType.AVATAR) {
-            Blob avatarBlob = firebaseService.uploadFile(profileImage);
-            mediaFile.setFileName(avatarBlob.getName());
-            mediaFile.setUrl(avatarBlob.getMediaLink());
+            String avatarURL = firebaseService.uploadFile(profileImage);
+            mediaFile.setFileName(profileImage.getOriginalFilename());
+            mediaFile.setUrl(avatarURL);
             mediaFile.setMediaType(mediaType);
+            mediaFile.setSize(profileImage.getSize() / 1024F);
             profile.setProfileAvatar(mediaFile);
         } else if (profileImageType == ProfileImageType.BACKGROUND) {
-            Blob backgroundBlob = firebaseService.uploadFile(profileImage);
-            mediaFile.setFileName(backgroundBlob.getName());
-            mediaFile.setUrl(backgroundBlob.getMediaLink());
+            String backgroundURL = firebaseService.uploadFile(profileImage);
+            mediaFile.setFileName(profileImage.getOriginalFilename());
+            mediaFile.setUrl(backgroundURL);
             mediaFile.setMediaType(mediaType);
+            mediaFile.setSize(profileImage.getSize() / 1024F);
             profile.setProfileBackground(mediaFile);
         }
         profileRepository.save(profile);
