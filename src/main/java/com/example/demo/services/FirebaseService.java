@@ -138,7 +138,7 @@ public class FirebaseService {
                 .delete();
     }
 
-    public Blob uploadFile(MultipartFile file) {
+    public String uploadFile(MultipartFile file) {
         try {
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
 
@@ -147,7 +147,7 @@ public class FirebaseService {
             Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
 
             blob.createAcl(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
-            return blob;
+            return blob.getMediaLink();
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }

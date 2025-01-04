@@ -24,6 +24,9 @@ public class MediaFile extends BaseModel {
     @Column(name = "url")
     private String url;
 
+    @Column(name = "size")
+    private Float size;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;

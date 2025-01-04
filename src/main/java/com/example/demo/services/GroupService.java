@@ -264,4 +264,11 @@ public class GroupService {
         List<GroupResponse> groupList = new GroupResponse().mapGroupsToDTOs(groups);
         return ResponseEntity.ok(groupList);
     }
+
+
+    public ResponseEntity<?> getGroup(Long groupId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
+        GroupResponse groupResponse = new GroupResponse().toDTO(group);
+        return ResponseEntity.ok(groupResponse);
+    }
 }

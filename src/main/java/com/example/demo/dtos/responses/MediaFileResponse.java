@@ -14,11 +14,14 @@ import java.util.List;
 public class MediaFileResponse {
     private String url;
     private MediaType type;
+    private String fileName;
+    private Float size;
 
     public MediaFileResponse toDto(MediaFile url) {
         MediaFileResponse mediaFileResponse = new MediaFileResponse();
         mediaFileResponse.setUrl(url.getUrl());
         mediaFileResponse.setType(url.getMediaType());
+        mediaFileResponse.setFileName(url.getFileName());
         return mediaFileResponse;
     }
 

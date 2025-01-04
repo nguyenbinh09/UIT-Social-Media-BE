@@ -43,7 +43,6 @@ public class PostResponse {
         this.setMediaFiles(new MediaFileResponse().mapsToDto(post.getMediaFiles()));
         this.setReactionCount(post.getReactions().size());
         this.setCommentCount(post.getComments().size());
-
         this.setCreatedAt(post.getCreatedAt());
         if (post.getIsShared())
             this.setSharedPost(new PostResponse().toDTO(post.getSharedPost()));
@@ -51,16 +50,17 @@ public class PostResponse {
     }
 
     public PostResponse toDTOWithReaction(Post post, ReactionTypeName reactionType) {
-        PostResponse postResponse = new PostResponse();
-        postResponse.toDTO(post);
-        postResponse.setReactionType(reactionType);
-        return postResponse;
+        this.toDTO(post);
+        this.setReactionType(reactionType);
+        return this;
     }
 
-    public List<PostResponse> mapPostsToDTOs(List<Post> posts, Map<Long, ReactionTypeName> reactionTypeMap) {
-        return posts.stream()
-                .map(post -> toDTOWithReaction(post, reactionTypeMap.get(post.getId())))
-                .collect(Collectors.toList());
+    public List<PostResponse> mapPostsToDTOs(List<Post> posts, Map<Long, ReactionTypeName> reactionTypeMap, List<Long> savedPostIds) {
+        return posts.stream().map(post -> {
+            PostResponse postResponse = new PostResponse().toDTOWithReaction(post, reactionTypeMap.get(post.getId()));
+            postResponse.setIsSaved(savedPostIds.contains(post.getId()));
+            return postResponse;
+        }).collect(Collectors.toList());
     }
 }
 
