@@ -34,13 +34,12 @@ public class ProfileService {
 
     @Transactional
     public ResponseEntity<?> createProfile(CreateProfileRequest createProfileRequest) {
+        System.out.println("toi day roi");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-
         if (profileRepository.existsByTagName(createProfileRequest.getTagName())) {
             throw new RuntimeException("Tag name already exists. Please choose another.");
         }
-
         if (currentUser.getProfile() != null) {
             throw new RuntimeException("Profile already exists");
         }
@@ -48,7 +47,6 @@ public class ProfileService {
         Profile profile = new Profile();
         InformationDetail informationDetail = new InformationDetail();
         Contact contact = new Contact();
-
         profile.setStudentCode(createProfileRequest.getCode());
         profile.setNickName(createProfileRequest.getNickName());
         profile.setTagName(createProfileRequest.getTagName());
@@ -80,6 +78,7 @@ public class ProfileService {
         contact.setAddress(createProfileRequest.getAddress());
         profile.setContact(contact);
 
+        profile.setUser(currentUser);
         Profile savedProfile = profileRepository.save(profile);
 
         currentUser.setProfile(savedProfile);

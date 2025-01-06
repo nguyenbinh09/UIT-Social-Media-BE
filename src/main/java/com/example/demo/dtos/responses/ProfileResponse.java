@@ -20,6 +20,7 @@ public class ProfileResponse {
     private GenderType gender;
     private String bio;
     private String avatarUrl;
+    private String userId;
     private String coverImageUrl;
     private InformationDetailResponse informationDetail;
     private Boolean isPrivate;
@@ -32,6 +33,7 @@ public class ProfileResponse {
         this.setNickName(profile.getNickName());
         this.setTagName(profile.getTagName());
         this.setGender(profile.getGender());
+        this.setUserId(profile.getUser().getId());
         this.setBio(profile.getBio());
         this.setAvatarUrl(profile.getProfileAvatar().getUrl());
         if (profile.getProfileBackground() != null) {

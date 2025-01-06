@@ -40,6 +40,9 @@ public class Profile extends BaseModel {
     @Column(name = "bio")
     private String bio;
 
+    @OneToOne(mappedBy = "profile", fetch = FetchType.LAZY)
+    private User user;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "profile_avatar_id", nullable = false)
     private MediaFile profileAvatar;
