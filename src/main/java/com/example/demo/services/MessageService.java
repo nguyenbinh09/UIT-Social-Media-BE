@@ -51,7 +51,7 @@ public class MessageService {
 
         Boolean isSenderFollowingReceiver = followService.isFollowing(sender.getId(), receiver.getId());
         Boolean isReceiverFollowingSender = followService.isFollowing(receiver.getId(), sender.getId());
- 
+
         boolean isFollowing = isSenderFollowingReceiver && isReceiverFollowingSender;
         PersonalConversation conversation = personalConversationRepository
                 .findByUserIds(sender.getId(), receiver.getId())
@@ -219,7 +219,10 @@ public class MessageService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         List<PersonalConversation> conversations = personalConversationRepository.findPendingConversationsWithLatestMessages(currentUser.getId());
-        return ResponseEntity.ok(conversations);
+        List<ConversationResponse> conversationResponses = conversations.stream()
+                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId()))
+                .toList();
+        return ResponseEntity.ok(conversationResponses);
     }
 
     public ResponseEntity<?> getConversations(int page, int size) {
