@@ -34,7 +34,6 @@ public class ProfileService {
 
     @Transactional
     public ResponseEntity<?> createProfile(CreateProfileRequest createProfileRequest) {
-        System.out.println("toi day roi");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         if (profileRepository.existsByTagName(createProfileRequest.getTagName())) {

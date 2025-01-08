@@ -9,14 +9,14 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class AuthResponse {
-    private String token;
-    private String type = "Bearer";
+    private String accessToken;
+    private String refreshToken;
     private List<String> roles;
 
-    public AuthResponse(String token, List<String> roleNames) {
-        this.token = token;
+    public AuthResponse(String accessToken, String refreshToken, List<String> roleNames) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.roles = roleNames;
     }
 }

@@ -2,6 +2,7 @@ package com.example.demo.services;
 
 import com.example.demo.dtos.responses.CommentResponse;
 import com.example.demo.dtos.responses.MessageResponse;
+import com.example.demo.dtos.responses.NotificationResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Notification;
@@ -68,7 +69,7 @@ public class FirebaseService {
             Map<String, Object> postReferenceMap = Map.of(
                     "post_id", post.getId(),
                     "title", postResponse.getTitle(),
-                    "timestamp", postResponse.getCreatedAt().toEpochSecond(ZoneOffset.UTC)
+                    "timestamp", postResponse.getCreatedAt()
             );
 
             firestore.collection("feeds")
@@ -190,20 +191,14 @@ public class FirebaseService {
     }
 
     public void pushNotificationToUser(Notification notification, User user) {
-        String groupId = notification.getGroup() != null ? notification.getGroup().getId().toString() : "";
-
-        Map<String, Object> notificationData = Map.of(
-                "message", notification.getMessage(),
-                "createdAt", notification.getCreatedAt().toEpochSecond(ZoneOffset.UTC),
-                "type", notification.getType().name(),
-                "actionUrl", notification.getActionUrl(),
-                "sender", notification.getSender().getId(),
-                "group", groupId
-        );
+        NotificationResponse notificationResponse = new NotificationResponse().toDto(notification);
+        Map<String, Object> notificationMap = objectMapper.convertValue(notificationResponse, new TypeReference<>() {
+        });
 
         firestore.collection("notifications")
                 .document(user.getId())
                 .collection("user_notifications")
-                .add(notificationData);
+                .document(notification.getId().toString())
+                .set(notificationMap);
     }
 }

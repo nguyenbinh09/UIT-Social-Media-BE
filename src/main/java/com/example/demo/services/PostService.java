@@ -63,7 +63,9 @@ public class PostService {
     @Transactional
     public ResponseEntity<?> createPost(CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
+        User user = (User) authentication.getPrincipal();
+        User currentUser = userRepository.findUserWithProfileById(user.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
 
         Post post = new Post();
@@ -85,9 +87,9 @@ public class PostService {
                     .orElseThrow(() -> new RuntimeException("Follower not found"));
             String title = currentUser.getUsername() + " created a new post";
             String message = savedPost.getTitle();
-            Profile profile = profileRepository.findById(currentUser.getProfile().getId())
-                    .orElseThrow(() -> new RuntimeException("Profile not found"));
-            String avatar = profile.getProfileAvatar().getUrl();
+//            Profile profile = profileRepository.findById(currentUser.getProfile().getId())
+//                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            String avatar = currentUser.getProfile().getProfileAvatar().getUrl();
 
             Notification notification = new Notification();
             notification.setSender(currentUser);

@@ -28,4 +28,10 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u FROM User u JOIN FETCH u.profile WHERE u.id = :userId")
     Optional<User> findUserWithProfileById(@Param("userId") String userId);
+
+    Boolean existsByUsername(String username);
+
+    Boolean existsByEmail(String email);
+
+    Optional<User> findByEmail(String email);
 }
