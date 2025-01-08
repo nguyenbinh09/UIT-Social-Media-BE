@@ -36,8 +36,17 @@ public class JWTService {
         return createToken(new HashMap<>(), userDetails);
     }
 
+    public String generateRefreshToken(UserDetails userDetails) {
+        return createRefreshToken(new HashMap<>(), userDetails);
+    }
+
     public String createToken(HashMap<String, Object> extraClaims, UserDetails userDetails) {
         return buildToken(extraClaims, userDetails, jwtExpiration);
+    }
+
+    public String createRefreshToken(HashMap<String, Object> extraClaims, UserDetails userDetails) {
+        int refreshTokenExpiration = 604800;
+        return buildToken(extraClaims, userDetails, refreshTokenExpiration);
     }
 
     public Long getExpirationTime() {
