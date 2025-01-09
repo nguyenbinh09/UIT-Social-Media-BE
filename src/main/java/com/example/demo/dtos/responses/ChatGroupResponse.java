@@ -19,11 +19,13 @@ public class ChatGroupResponse {
     private MessageResponse lastMessage;
 
     public ChatGroupResponse toDto(ChatGroup chatGroup) {
-        ChatGroupResponse chatGroupResponse = new ChatGroupResponse();
-        chatGroupResponse.setId(chatGroup.getId());
-        chatGroupResponse.setGroupName(chatGroup.getName());
-        chatGroupResponse.setAvatarUrl(chatGroup.getAvatar() != null ? chatGroup.getAvatar().getUrl() : null);
-        chatGroupResponse.setLastMessage(new MessageResponse().toDTO(chatGroup.getMessages().get(chatGroup.getMessages().size() - 1)));
-        return chatGroupResponse;
+        this.setId(chatGroup.getId());
+        this.setGroupName(chatGroup.getName());
+        this.setAvatarUrl(chatGroup.getAvatar() != null ? chatGroup.getAvatar().getUrl() : null);
+        if (!chatGroup.getMessages().isEmpty()) {
+            Message lastMessage = chatGroup.getMessages().get(chatGroup.getMessages().size() - 1);
+            this.setLastMessage(new MessageResponse().toDTO(lastMessage));
+        }
+        return this;
     }
 }

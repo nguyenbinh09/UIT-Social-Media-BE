@@ -46,4 +46,34 @@ public class EducationController {
                     .body("Failed to fetch student score: " + e.getMessage());
         }
     }
+
+    @GetMapping("/fetchSchedule")
+    public ResponseEntity<?> fetchSchedule(@RequestParam String token, @RequestParam int hocky, @RequestParam int namhoc) {
+        try {
+            return educationService.fetchSchedule(token, hocky, namhoc);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch student schedule: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/fetchExamSchedule")
+    public ResponseEntity<?> fetchExamSchedule(@RequestParam String token, @RequestParam String examType, @RequestParam int hocky, @RequestParam int namhoc) {
+        try {
+            return educationService.fetchExamSchedule(token, examType, hocky, namhoc);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch student exam schedule: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/fetchNotification")
+    public ResponseEntity<?> fetchNotification(@RequestParam String token, @RequestParam int page, @RequestParam int size) {
+        try {
+            return educationService.fetchNotification(token, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch student notification: " + e.getMessage());
+        }
+    }
 }
