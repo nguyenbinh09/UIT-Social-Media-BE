@@ -130,8 +130,8 @@ public class ChatGroupService {
     public ResponseEntity<?> getChatGroups(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-
         List<ChatGroup> chatGroups = chatGroupRepository.findChatGroupsWithLatestMessages(currentUser.getId());
+        System.out.println(chatGroups.get(0).getId());
         List<ChatGroupResponse> chatGroupResponses = chatGroups.stream()
                 .map(chatGroup -> new ChatGroupResponse().toDto(chatGroup))
                 .toList();

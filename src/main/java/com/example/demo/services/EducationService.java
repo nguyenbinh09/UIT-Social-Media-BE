@@ -1,69 +1,64 @@
 package com.example.demo.services;
 
-import com.example.demo.dtos.responses.AuthEducationResponse;
-import com.example.demo.dtos.responses.UniversityScoreResponse;
-import com.example.demo.dtos.responses.UniversityUserResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.example.demo.dtos.responses.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class EducationService {
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+
+    @Value("${uit-education.url}")
+    private String educationUrl;
 
     public EducationService(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder.build();
-        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
     public ResponseEntity<?> loginToUniversity(String username, String password) {
-        String loginUrl = "http://localhost:8082/api/auth/login";
-//        String loginUrl = "https://uit-be-simulator.onrender.com/api/auth/login";
+        String loginUrl = educationUrl + "/api/auth/login";
 
         Map<String, String> payload = new HashMap<>();
         payload.put("username", username);
         payload.put("password", password);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, payload, Map.class);
+        ResponseEntity<AuthEducationResponse> response = restTemplate.postForEntity(loginUrl, payload, AuthEducationResponse.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            Map<String, Object> responseBody = response.getBody();
-
-            AuthEducationResponse authResponse = objectMapper.convertValue(responseBody, AuthEducationResponse.class);
-
-            return ResponseEntity.ok(authResponse);
+            AuthEducationResponse responseBody = response.getBody();
+            return ResponseEntity.ok(responseBody);
         } else {
             throw new RuntimeException("Failed to log in to third-party server.");
         }
     }
 
     public ResponseEntity<?> fetchStudentProfile(String token) {
-        String profileUrl = "http://localhost:8082/api/users/me";
-//        String profileUrl = "https://uit-be-simulator.onrender.com/api/users/me";
+        String profileUrl = educationUrl + "/api/users/me";
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<UniversityUserResponse> response = restTemplate.exchange(
                 profileUrl,
                 HttpMethod.GET,
                 requestEntity,
-                Map.class
+                UniversityUserResponse.class
         );
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            Map<String, Object> responseBody = response.getBody();
-            UniversityUserResponse userResponse = objectMapper.convertValue(responseBody, UniversityUserResponse.class);
-            return ResponseEntity.ok(userResponse);
+            UniversityUserResponse responseBody = response.getBody();
+            return ResponseEntity.ok(responseBody);
         } else {
             return ResponseEntity.status(response.getStatusCode())
                     .body("Failed to fetch student profile from university API.");
@@ -71,28 +66,132 @@ public class EducationService {
     }
 
     public ResponseEntity<?> fetchScore(String token) {
-        String scoreUrl = "http://localhost:8082/api/scores/getScores";
-//        String scoreUrl = "https://uit-be-simulator.onrender.com/api/scores/getScores";
+        String scoreUrl = educationUrl + "/api/scores/getScores";
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<List<UniversityScoreResponse>> response = restTemplate.exchange(
                 scoreUrl,
                 HttpMethod.GET,
                 requestEntity,
-                Map.class
+                new ParameterizedTypeReference<List<UniversityScoreResponse>>() {
+                }
         );
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            Map<String, Object> responseBody = response.getBody();
-            UniversityScoreResponse scoreResponse = objectMapper.convertValue(responseBody, UniversityScoreResponse.class);
-            return ResponseEntity.ok(scoreResponse);
+            List<UniversityScoreResponse> responseScores = response.getBody();
+            System.out.println(responseScores);
+            return ResponseEntity.ok(responseScores);
         } else {
             return ResponseEntity.status(response.getStatusCode())
                     .body("Failed to fetch student profile from university API.");
+        }
+    }
+
+    public ResponseEntity<?> fetchSchedule(String token, int hocky, int namhoc) {
+        String scheduleUrl = educationUrl + "/api/schedules/getSchedule";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(scheduleUrl)
+                    .queryParam("hocky", hocky)
+                    .queryParam("namhoc", namhoc);
+
+            ResponseEntity<Map<Integer, List<UniversityScheduleResponse>>> response = restTemplate.exchange(
+                    uriBuilder.toUriString(),
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<Map<Integer, List<UniversityScheduleResponse>>>() {
+                    }
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<Integer, List<UniversityScheduleResponse>> schedules = response.getBody();
+                return ResponseEntity.ok(schedules);
+            } else {
+                return ResponseEntity.status(response.getStatusCode())
+                        .body("Failed to fetch student schedule from university API.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while fetching schedule: " + e.getMessage());
+        }
+    }
+
+    public ResponseEntity<?> fetchExamSchedule(String token, String examType, int hocky, int namhoc) {
+        String examScheduleUrl = educationUrl + "/api/exams/getExams";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(examScheduleUrl)
+                    .queryParam("examType", examType)
+                    .queryParam("semester", hocky)
+                    .queryParam("year", namhoc);
+
+            ResponseEntity<List<ExamResponse>> response = restTemplate.exchange(
+                    uriBuilder.toUriString(),
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<List<ExamResponse>>() {
+                    }
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                List<ExamResponse> examResponses = response.getBody();
+                return ResponseEntity.ok(examResponses);
+            } else {
+                return ResponseEntity.status(response.getStatusCode())
+                        .body("Failed to fetch student exam schedule from university API.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while fetching exam schedule: " + e.getMessage());
+        }
+    }
+
+
+    public ResponseEntity<?> fetchNotification(String token, int page, int size) {
+        String notificationUrl = educationUrl + "/api/notifications/getNotifications";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(notificationUrl)
+                    .queryParam("page", page)
+                    .queryParam("size", size);
+
+            ResponseEntity<List<UniversityNotificationResponse>> response = restTemplate.exchange(
+                    uriBuilder.toUriString(),
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<List<UniversityNotificationResponse>>() {
+                    }
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                List<UniversityNotificationResponse> notifications = response.getBody();
+                return ResponseEntity.ok(notifications);
+            } else {
+                return ResponseEntity.status(response.getStatusCode())
+                        .body("Failed to fetch student notifications from university API.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while fetching notifications: " + e.getMessage());
         }
     }
 }
