@@ -65,7 +65,7 @@ public class CommentService {
         firebaseService.pushCommentToPostOwner(new CommentResponse().toDTO(savedComment));
 
         User postOwner = post.getUser();
-        notifyUserOfComment(postOwner, savedComment, currentUser);
+        notifyUserOfComment(postOwner, savedComment, commenter);
         return ResponseEntity.ok("Comment created successfully");
     }
 
