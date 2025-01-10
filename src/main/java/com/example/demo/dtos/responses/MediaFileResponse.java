@@ -22,6 +22,7 @@ public class MediaFileResponse {
         mediaFileResponse.setUrl(url.getUrl());
         mediaFileResponse.setType(url.getMediaType());
         mediaFileResponse.setFileName(url.getFileName());
+        mediaFileResponse.setSize(url.getSize());
         return mediaFileResponse;
     }
 

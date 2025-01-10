@@ -28,6 +28,7 @@ public class UserController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all-users")
     public ResponseEntity<?> getAllUsers() {
         try {
