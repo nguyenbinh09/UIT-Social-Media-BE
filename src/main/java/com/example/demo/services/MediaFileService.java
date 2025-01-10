@@ -35,10 +35,13 @@ public class MediaFileService {
             MediaType mediaType = MediaFIleUtils.determineMediaType(file);
             String mediaURL = FirebaseService.uploadFile(file);
 
+            System.out.println("Media size: " + file.getSize() / 1024F);
+
             mediaFile.setFileName(file.getOriginalFilename());
             mediaFile.setUrl(mediaURL);
             mediaFile.setMediaType(mediaType);
             mediaFile.setSize(file.getSize() / 1024F);
+            System.out.println("Media size: " + file.getSize() / 1024F + " " + mediaFile.getSize());
             switch (feedItemType) {
                 case POST:
                     Post post = postRepository.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));
