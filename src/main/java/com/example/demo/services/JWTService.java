@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -45,7 +44,7 @@ public class JWTService {
     }
 
     public String createRefreshToken(HashMap<String, Object> extraClaims, UserDetails userDetails) {
-        int refreshTokenExpiration = 604800;
+        int refreshTokenExpiration = 604800000;
         return buildToken(extraClaims, userDetails, refreshTokenExpiration);
     }
 
