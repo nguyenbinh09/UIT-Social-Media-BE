@@ -7,13 +7,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "reaction_types")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReactionType extends BaseModel {
+public class ReactionType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

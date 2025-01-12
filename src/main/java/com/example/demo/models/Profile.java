@@ -22,9 +22,6 @@ public class Profile extends BaseModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "student_code", nullable = false)
-    private String studentCode;
-
     @Column(name = "nick_name", nullable = false)
     private String nickName;
 
@@ -41,7 +38,10 @@ public class Profile extends BaseModel {
     private String bio;
 
     @OneToOne(mappedBy = "profile", fetch = FetchType.LAZY)
-    private User user;
+    private Student student;
+
+    @OneToOne(mappedBy = "profile", fetch = FetchType.LAZY)
+    private Lecturer lecturer;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "profile_avatar_id", nullable = false)

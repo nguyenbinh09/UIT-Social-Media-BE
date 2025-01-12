@@ -21,4 +21,11 @@ public class Organizer {
 
     @Column(name = "organization_name")
     private String organizationName;
+
+    @Column(name = "organization_description")
+    private String organizationDescription;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "contact_id", nullable = false)
+    private Contact contact;
 }

@@ -24,17 +24,19 @@ import java.util.Optional;
 public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
     private final FollowRequestRepository followRequestRepository;
-    private final ProfileRepository profileRepository;
     private final FirebaseService firebaseService;
     private final NotificationRepository notificationRepository;
+    private final ProfileService profileService;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
     @Transactional
     public ResponseEntity<?> followUser(String followedId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
-        User followedUser = userRepository.findById(followedId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = (User) authentication.getPrincipal();
+        User currentUser = profileService.getUserWithProfile(user);
+        User followedUser = profileService.getUserWithProfile(userRepository.findById(followedId)
+                .orElseThrow(() -> new RuntimeException("User not found")));
 
         if (currentUser.getId().equals(followedId)) {
             return ResponseEntity.badRequest().body("You cannot follow yourself.");
@@ -66,7 +68,7 @@ public class FollowService {
             newFollowRequest.setFollow(follow);
             followRequestRepository.save(newFollowRequest);
 
-            String message = currentUser.getUsername() + "has followed you. Do you want to respond the follow request?";
+            String message = currentUser.getUsername() + " has followed you. Do you want to respond the follow request?";
             String actionUrl = "/follow-requests/" + newFollowRequest.getId();
 
             Notification notification = new Notification();
@@ -109,15 +111,18 @@ public class FollowService {
         FollowRequest followRequest = followRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Follow request not found"));
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
+        User user = (User) authentication.getPrincipal();
+        User currentUser = profileService.getUserWithProfile(user);
         if (!followRequest.getFollowed().getId().equals(currentUser.getId())) {
             return ResponseEntity.badRequest().body("You are not authorized to respond to this follow request.");
         }
         Optional<Follow> existingFollow = followRepository.findByFollowerIdAndFollowedId(followRequest.getFollower().getId(), currentUser.getId());
         if (existingFollow.isPresent()) {
-            User followedUser = userRepository.findById(followRequest.getFollower().getId())
-                    .orElseThrow(() -> new RuntimeException("Follower not found"));
-            if (responseStatus == FollowRequestStatus.ACCEPTED && followRequest.getStatus() == FollowRequestStatus.PENDING) {
+            User followedUser = profileService.getUserWithProfile(userRepository.findById(followRequest.getFollower().getId())
+                    .orElseThrow(() -> new RuntimeException("User not found")));
+            if (responseStatus == FollowRequestStatus.PENDING) {
+                return ResponseEntity.badRequest().body("Invalid response status.");
+            } else if (responseStatus == FollowRequestStatus.ACCEPTED && followRequest.getStatus() == FollowRequestStatus.PENDING) {
                 followRequest.setStatus(FollowRequestStatus.ACCEPTED);
                 followRequestRepository.save(followRequest);
 
@@ -130,13 +135,15 @@ public class FollowService {
                 followRequest.setStatus(FollowRequestStatus.REJECTED);
                 followRequestRepository.save(followRequest);
             }
-            String message = currentUser.getUsername() + " has" + followRequest.getStatus().toString().toLowerCase(Locale.ROOT) + " your follow request.";
+            String message = currentUser.getUsername() + " has " + followRequest.getStatus().toString().toLowerCase(Locale.ROOT) + " your follow request.";
+            String actionUrl = "/users/" + currentUser.getId();
 
             Notification notification = new Notification();
             notification.setSender(currentUser);
             notification.setReceiver(followedUser);
             notification.setType(NotificationType.FOLLOW_RESPONSE);
             notification.setMessage(message);
+            notification.setActionUrl(actionUrl);
             notificationRepository.save(notification);
 
             firebaseService.pushNotificationToUser(notification, followedUser);
@@ -151,7 +158,7 @@ public class FollowService {
         User currentUser = (User) authentication.getPrincipal();
         List<FollowRequest> followRequests = followRequestRepository.findByFollowedIdAndStatus(currentUser.getId(), FollowRequestStatus.PENDING);
         List<FollowRequestResponse> followRequestResponses = followRequests.stream()
-                .map(followRequest -> new FollowRequestResponse().toDTO(followRequest))
+                .map(followRequest -> new FollowRequestResponse().toDTO(followRequest, profileResponseBuilder))
                 .toList();
         return ResponseEntity.ok(followRequestResponses);
     }
@@ -163,9 +170,7 @@ public class FollowService {
         List<User> followerUsers = followers.stream()
                 .map(Follow::getFollower)
                 .toList();
-        List<UserResponse> followerUserResponses = followerUsers.stream()
-                .map(user -> new UserResponse().toDTO(user))
-                .toList();
+        List<UserResponse> followerUserResponses = new UserResponse().mapUsersToDTOs(followerUsers, profileResponseBuilder);
         return ResponseEntity.ok(followerUserResponses);
     }
 
@@ -176,9 +181,7 @@ public class FollowService {
         List<User> followingUsers = following.stream()
                 .map(Follow::getFollowed)
                 .toList();
-        List<UserResponse> followingUserResponses = followingUsers.stream()
-                .map(user -> new UserResponse().toDTO(user))
-                .toList();
+        List<UserResponse> followingUserResponses = new UserResponse().mapUsersToDTOs(followingUsers, profileResponseBuilder);
         return ResponseEntity.ok(followingUserResponses);
     }
 }

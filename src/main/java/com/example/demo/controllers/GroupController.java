@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/groups")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
 @SecurityRequirement(name = "bearerAuth")
 public class GroupController {
     private final GroupService groupService;
@@ -113,6 +113,24 @@ public class GroupController {
     public ResponseEntity<?> getGroup(@PathVariable Long groupId) {
         try {
             return groupService.getGroup(groupId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/group/{groupId}/requests")
+    public ResponseEntity<?> getRequests(@PathVariable Long groupId) {
+        try {
+            return groupService.getRequests(groupId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/group/invitations")
+    public ResponseEntity<?> getInvitations() {
+        try {
+            return groupService.getInvitations();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

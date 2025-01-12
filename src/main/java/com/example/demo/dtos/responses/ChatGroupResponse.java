@@ -16,7 +16,8 @@ public class ChatGroupResponse {
     private Long id;
     private String groupName;
     private String avatarUrl;
-    private MessageResponse lastMessage;
+    private String lastMessage;
+    private String lastMessageSender;
 
     public ChatGroupResponse toDto(ChatGroup chatGroup) {
         this.setId(chatGroup.getId());
@@ -24,7 +25,8 @@ public class ChatGroupResponse {
         this.setAvatarUrl(chatGroup.getAvatar() != null ? chatGroup.getAvatar().getUrl() : null);
         if (!chatGroup.getMessages().isEmpty()) {
             Message lastMessage = chatGroup.getMessages().get(chatGroup.getMessages().size() - 1);
-            this.setLastMessage(new MessageResponse().toDTO(lastMessage));
+            this.setLastMessage(lastMessage.getContent());
+            this.setLastMessageSender(lastMessage.getSender().getId());
         }
         return this;
     }

@@ -20,12 +20,13 @@ public interface PersonalConversationRepository extends JpaRepository<PersonalCo
             "AND pc.isDeleted = false")
     Optional<PersonalConversation> findByUserIds(String userId1, String userId2);
 
-    @Query("SELECT c FROM PersonalConversation c WHERE c.user1.id = :userId OR c.user2.id = :userId " +
+    @Query("SELECT c FROM PersonalConversation c WHERE (c.user1.id = :userId OR c.user2.id = :userId) " +
+            "AND c.isPending = false " +
             "ORDER BY (SELECT MAX(msg.createdAt) FROM Message msg WHERE msg.conversation = c) DESC")
     List<PersonalConversation> findConversationsWithLatestMessages(@Param("userId") String userId);
 
-    @Query("SELECT c FROM PersonalConversation c WHERE c.user1.id = :id OR c.user2.id = :id " +
+    @Query("SELECT c FROM PersonalConversation c WHERE (c.user1.id = :userId OR c.user2.id = :userId) " +
             "AND c.isPending = true " +
             "ORDER BY (SELECT MAX(msg.createdAt) FROM Message msg WHERE msg.conversation = c) DESC")
-    List<PersonalConversation> findPendingConversationsWithLatestMessages(String id);
+    List<PersonalConversation> findPendingConversationsWithLatestMessages(@Param("userId") String userId);
 }

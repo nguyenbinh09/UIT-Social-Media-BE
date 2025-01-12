@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/educations")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
 @SecurityRequirement(name = "bearerAuth")
 public class EducationController {
     private final EducationService educationService;

@@ -39,25 +39,23 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class FirebaseService {
-    private final DatabaseReference firebaseDatabase;
     private final FirebaseApp firebaseApp;
     private final String bucketName;
     private final ObjectMapper objectMapper;
-    private final NotificationService notificationService;
+    private final ProfileResponseBuilder profileResponseBuilder;
     private final Firestore firestore = FirestoreClient.getFirestore();
 
     @Autowired
-    public FirebaseService(@Value("${firebase.bucket.name}") String bucketName, DatabaseReference firebaseDatabase, FirebaseApp firebaseApp, ObjectMapper objectMapper, NotificationService notificationService) {
-        this.firebaseDatabase = firebaseDatabase;
+    public FirebaseService(@Value("${firebase.bucket.name}") String bucketName, FirebaseApp firebaseApp, ObjectMapper objectMapper, ProfileResponseBuilder profileResponseBuilder) {
         this.firebaseApp = firebaseApp;
         this.bucketName = bucketName;
         this.objectMapper = objectMapper;
-        this.notificationService = notificationService;
+        this.profileResponseBuilder = profileResponseBuilder;
     }
 
     @Transactional
     public void pushPostToReceivers(Post post, List<String> receiverIds) {
-        PostResponse postResponse = new PostResponse().toDTO(post);
+        PostResponse postResponse = new PostResponse().toDTO(post, profileResponseBuilder);
         Map<String, Object> postResponseMap = objectMapper.convertValue(postResponse, new TypeReference<>() {
         });
 
@@ -90,7 +88,7 @@ public class FirebaseService {
     }
 
     public void pushMessageToReceiver(com.example.demo.models.Message message) {
-        MessageResponse messageResponse = new MessageResponse().toDTO(message);
+        MessageResponse messageResponse = new MessageResponse().toDTO(message, profileResponseBuilder);
         Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<>() {
         });
 
@@ -111,7 +109,7 @@ public class FirebaseService {
     }
 
     public void pushApprovedMessage(com.example.demo.models.Message message) {
-        MessageResponse messageResponse = new MessageResponse().toDTO(message);
+        MessageResponse messageResponse = new MessageResponse().toDTO(message, profileResponseBuilder);
         Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<>() {
         });
 
@@ -178,7 +176,7 @@ public class FirebaseService {
 
 
     public void pushGroupMessageToMembers(com.example.demo.models.Message savedMessage) {
-        MessageResponse messageResponse = new MessageResponse().toDTO(savedMessage);
+        MessageResponse messageResponse = new MessageResponse().toDTO(savedMessage, profileResponseBuilder);
         Map<String, Object> messageMap = objectMapper.convertValue(messageResponse, new TypeReference<Map<String, Object>>() {
         });
 
@@ -191,7 +189,7 @@ public class FirebaseService {
     }
 
     public void pushNotificationToUser(Notification notification, User user) {
-        NotificationResponse notificationResponse = new NotificationResponse().toDto(notification);
+        NotificationResponse notificationResponse = new NotificationResponse().toDto(notification, profileResponseBuilder);
         Map<String, Object> notificationMap = objectMapper.convertValue(notificationResponse, new TypeReference<>() {
         });
 

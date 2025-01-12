@@ -14,9 +14,8 @@ public class CreateProfileRequest {
     private String nickName;
     private String tagName;
     private GenderType gender;
-    private String major;
-    private Integer schoolYear;
-    private String activityClass;
+    private StudentRequest student;
+    private LecturerRequest lecturer;
     private LocalDate birthday;
     private String phoneNumber;
     private String address;

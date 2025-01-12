@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
 @SecurityRequirement(name = "bearerAuth")
 public class PostController {
     private final PostService postService;
@@ -145,4 +145,14 @@ public class PostController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/getPostByUserId")
+    public ResponseEntity<?> getPostByUserId(@RequestParam String userId, @RequestParam int page, @RequestParam int size) {
+        try {
+            return postService.getPostByUserId(userId, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

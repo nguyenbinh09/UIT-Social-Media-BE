@@ -11,7 +11,8 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 public class UpdateProfileRequest {
-    private String studentCode;
+    private StudentRequest student;
+    private LecturerRequest lecturer;
     private String nickName;
     private String tagName;
     private LocalDate birthDate;

@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/messages")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER') or hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
 public class MessageController {
     private final MessageService messageService;

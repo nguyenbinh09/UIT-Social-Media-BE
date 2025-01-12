@@ -25,20 +25,20 @@ public class DataGenerationService {
 
     public void generateUserData() {
         List<User> users = new ArrayList<>();
-        Role role = roleRepository.findByName(RoleName.USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        Role role = roleRepository.findByName(RoleName.STUDENT).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
 
         for (int i = 0; i < 10; i++) { // Generate 1000 fake users
             User user = new User();
             String code = faker.number().digits(8);
             user.setUsername(code);
             user.setEmail(code + "@gm.uit.edu.vn");
-            user.setPassword(passwordEncoder.encode(faker.internet().password()));
+            user.setPassword(passwordEncoder.encode("123456"));
             user.setFcmToken(faker.internet().uuid());
-            user.getRoles().add(role);
+            user.setRole(role);
             users.add(user);
         }
 
         userRepository.saveAll(users);
-        System.out.println("Inserted 1000 fake users into the database.");
+        System.out.println("Inserted 10 fake users into the database.");
     }
 }

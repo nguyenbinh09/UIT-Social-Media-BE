@@ -8,6 +8,7 @@ import com.example.demo.models.Group;
 import com.example.demo.models.Post;
 import com.example.demo.models.PostReaction;
 import com.example.demo.models.User;
+import com.example.demo.services.ProfileResponseBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -29,6 +30,7 @@ public class SearchRepository {
     @PersistenceContext
     private EntityManager entityManager;
     private final SavedPostRepository savedPostRepository;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
     public List<PostResponse> searchPosts(String keyword, User currentUser) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -49,7 +51,7 @@ public class SearchRepository {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder);
     }
 
     public List<UserResponse> searchUsers(String keyword) {
@@ -65,9 +67,7 @@ public class SearchRepository {
         query.select(root).where(cb.or(usernamePredicate, emailPredicate, nickNamePredicate, tagNamePredicate));
         List<User> users = entityManager.createQuery(query).getResultList();
 
-        return users.stream()
-                .map(user -> new UserResponse().toDTO(user))
-                .collect(Collectors.toList());
+        return new UserResponse().mapUsersToDTOs(users, profileResponseBuilder);
     }
 
     public List<GroupResponse> searchGroups(String keyword) {

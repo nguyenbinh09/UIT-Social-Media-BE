@@ -40,12 +40,10 @@ public class UserController {
 
     @PostMapping("/registerToken")
     public ResponseEntity<?> registerFcmToken(@RequestParam String fcmToken) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
-
-        currentUser.setFcmToken(fcmToken);
-        userRepository.save(currentUser);
-
-        return ResponseEntity.ok("FCM Token registered successfully");
+        try {
+            return userService.registerFcmToken(fcmToken);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

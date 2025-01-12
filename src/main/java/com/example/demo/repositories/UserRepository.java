@@ -26,12 +26,24 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findAllUsersByIdIn(List<String> userIds);
 
-    @Query("SELECT u FROM User u JOIN FETCH u.profile WHERE u.id = :userId")
-    Optional<User> findUserWithProfileById(@Param("userId") String userId);
-
     Boolean existsByUsername(String username);
 
     Boolean existsByEmail(String email);
 
     Optional<User> findByEmail(String email);
+
+    @Query("SELECT u FROM User u " +
+            "LEFT JOIN FETCH u.student s " +
+            "LEFT JOIN FETCH s.profile p " +
+            "WHERE u.id = :userId")
+    Optional<User> findUsersWithStudentAndProfile(@Param("userId") String userId);
+
+    @Query("SELECT u FROM User u " +
+            "LEFT JOIN FETCH u.lecturer l " +
+            "LEFT JOIN FETCH l.profile p " +
+            "WHERE u.id = :userId")
+    Optional<User> findUsersWithLecturerAndProfile(@Param("userId") String userId);
+
+    @Query("SELECT u FROM User u WHERE u.fcmToken = :fcmToken AND u.fcmToken IS NOT NULL")
+    Optional<User> findByFcmToken(@Param("fcmToken") String fcmToken);
 }

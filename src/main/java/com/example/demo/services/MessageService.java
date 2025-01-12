@@ -34,16 +34,17 @@ public class MessageService {
     private final FollowService followService;
     private final ChatGroupRepository chatGroupRepository;
     private final NotificationService notificationService;
-    private final ProfileRepository profileRepository;
+    private final ProfileService profileService;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
     @Transactional
     public ResponseEntity<?> sendOneToOneMessage(SendMessageRequest sendMessageRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        User sender = userRepository.findUserWithProfileById(currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        User receiver = userRepository.findUserWithProfileById(sendMessageRequest.getReceiverId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        User sender = profileService.getUserWithProfile(currentUser);
+        User receiver = profileService.getUserWithProfile(userRepository.findById(sendMessageRequest.getReceiverId())
+                .orElseThrow(() -> new RuntimeException("Receiver not found")));
 
         if (sender.getId().equals(receiver.getId())) {
             return ResponseEntity.badRequest().body("You cannot send message to yourself");
@@ -79,8 +80,7 @@ public class MessageService {
         if (receiver.getFcmToken() != null) {
             String title = "New message from " + sender.getUsername();
             String messageNotify = "You have a new message from " + sender.getUsername() + ": " + sendMessageRequest.getContent();
-            Profile profile = profileRepository.findById(sender.getProfile().getId())
-                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            Profile profile = profileService.getProfileByUser(sender);
             String avatar = profile.getProfileAvatar().getUrl();
             String actionUrl = "/conversations/" + conversation.getId();
 
@@ -89,7 +89,7 @@ public class MessageService {
                     "conversationId", conversation.getId().toString(),
                     "actionUrl", actionUrl
             );
-            notificationService.sendNotification(receiver.getFcmToken(), title, messageNotify, avatar, dataPayload);
+            notificationService.sendNotification(receiver, title, messageNotify, avatar, dataPayload);
         }
 
         return ResponseEntity.ok().body("Message sent successfully");
@@ -142,8 +142,7 @@ public class MessageService {
     public ResponseEntity<?> sendGroupMessage(SendGroupMessageRequest request, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        User sender = userRepository.findUserWithProfileById(currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User sender = profileService.getUserWithProfile(currentUser);
 
         ChatGroup chatGroup = chatGroupRepository.findById(request.getChatGroupId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
@@ -192,7 +191,7 @@ public class MessageService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Message> messages = messageRepository.findByChatGroup(chatGroup, pageable);
         List<MessageResponse> messageResponses = messages.stream()
-                .map(message -> new MessageResponse().toDTO(message))
+                .map(message -> new MessageResponse().toDTO(message, profileResponseBuilder))
                 .toList();
         return ResponseEntity.ok(messageResponses);
     }
@@ -210,7 +209,7 @@ public class MessageService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Message> messages = messageRepository.findByConversationId(conversationId, pageable);
         List<MessageResponse> messageResponses = messages.stream()
-                .map(message -> new MessageResponse().toDTO(message))
+                .map(message -> new MessageResponse().toDTO(message, profileResponseBuilder))
                 .toList();
         return ResponseEntity.ok(messageResponses);
     }
@@ -220,7 +219,7 @@ public class MessageService {
         User currentUser = (User) authentication.getPrincipal();
         List<PersonalConversation> conversations = personalConversationRepository.findPendingConversationsWithLatestMessages(currentUser.getId());
         List<ConversationResponse> conversationResponses = conversations.stream()
-                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId()))
+                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId(), profileResponseBuilder))
                 .toList();
         return ResponseEntity.ok(conversationResponses);
     }
@@ -230,7 +229,7 @@ public class MessageService {
         User currentUser = (User) authentication.getPrincipal();
         List<PersonalConversation> conversations = personalConversationRepository.findConversationsWithLatestMessages(currentUser.getId());
         List<ConversationResponse> conversationResponses = conversations.stream()
-                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId()))
+                .map(conversation -> new ConversationResponse().toDto(conversation, currentUser.getId(), profileResponseBuilder))
                 .toList();
         return ResponseEntity.ok(conversationResponses);
     }

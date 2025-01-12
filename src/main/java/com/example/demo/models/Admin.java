@@ -24,4 +24,11 @@ public class Admin {
 
     @Column(name = "permission")
     private List<String> permissions = new ArrayList<>();
+
+    @Column(name = "admin_code", nullable = false)
+    private String adminCode;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "contact_id", nullable = false)
+    private Contact contact;
 }

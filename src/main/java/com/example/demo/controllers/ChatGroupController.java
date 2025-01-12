@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chat_groups")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
 @SecurityRequirement(name = "bearerAuth")
 public class ChatGroupController {
     private final ChatGroupService chatGroupService;
@@ -65,6 +65,15 @@ public class ChatGroupController {
     public ResponseEntity<?> getChatGroups(@RequestParam int page, @RequestParam int size) {
         try {
             return chatGroupService.getChatGroups(page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{chatGroupId}/getMembers")
+    public ResponseEntity<?> getMembers(@PathVariable Long chatGroupId) {
+        try {
+            return chatGroupService.getMembers(chatGroupId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

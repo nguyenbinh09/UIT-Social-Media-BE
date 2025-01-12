@@ -10,9 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 public class UpdateInfoDetailRequest {
     private String fullName;
-    private String major;
-    private Integer schoolYear;
-    private String activityClass;
     private List<String> work;
     private String currentCity;
     private String homeTown;

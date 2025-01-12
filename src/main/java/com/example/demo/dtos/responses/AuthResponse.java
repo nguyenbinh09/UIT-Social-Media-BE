@@ -12,11 +12,11 @@ import java.util.List;
 public class AuthResponse {
     private String accessToken;
     private String refreshToken;
-    private List<String> roles;
+    private String role;
 
-    public AuthResponse(String accessToken, String refreshToken, List<String> roleNames) {
+    public AuthResponse(String accessToken, String refreshToken, String roleName) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.roles = roleNames;
+        this.role = roleName;
     }
 }
