@@ -2,6 +2,7 @@ package com.example.demo.dtos.responses;
 
 import com.example.demo.enums.NotificationType;
 import com.example.demo.models.Notification;
+import com.example.demo.services.ProfileResponseBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,11 +23,11 @@ public class NotificationResponse {
     private Boolean isRead;
     private LocalDateTime createdAt;
 
-    public NotificationResponse toDto(Notification notification) {
+    public NotificationResponse toDto(Notification notification, ProfileResponseBuilder profileResponseBuilder) {
         NotificationResponse notificationResponse = new NotificationResponse();
         notificationResponse.id = notification.getId();
         notificationResponse.message = notification.getMessage();
-        notificationResponse.sender = new UserResponse().toDTO(notification.getSender());
+        notificationResponse.sender = new UserResponse().toDTO(notification.getSender(), profileResponseBuilder);
         notificationResponse.actionUrl = notification.getActionUrl();
         if (notification.getGroup() != null) {
             notificationResponse.group = new GroupResponse().toDTO(notification.getGroup());
@@ -37,9 +38,9 @@ public class NotificationResponse {
         return notificationResponse;
     }
 
-    public List<NotificationResponse> mapNotificationsToDTOs(List<Notification> notifications) {
+    public List<NotificationResponse> mapNotificationsToDTOs(List<Notification> notifications, ProfileResponseBuilder profileResponseBuilder) {
         return notifications.stream()
-                .map(this::toDto)
+                .map(notification -> new NotificationResponse().toDto(notification, profileResponseBuilder))
                 .toList();
     }
 }

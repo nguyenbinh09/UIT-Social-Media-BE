@@ -20,6 +20,10 @@ public class Student {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private Profile profile;
+
     @Column(name = "student_code", nullable = false)
     private String studentCode;
 
@@ -30,5 +34,5 @@ public class Student {
     private String className;
 
     @Column(name = "year_of_admission")
-    private int yearOfAdmission;
+    private Integer yearOfAdmission;
 }

@@ -39,7 +39,8 @@ public class PostService {
     private final SavedPostRepository savedPostRepository;
     private final NotificationService notificationService;
     private final NotificationRepository notificationRepository;
-    private final ProfileRepository profileRepository;
+    private final ProfileService profileService;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -57,15 +58,14 @@ public class PostService {
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder);
     }
 
     @Transactional
     public ResponseEntity<?> createPost(CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        User currentUser = userRepository.findUserWithProfileById(user.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User currentUser = profileService.getUserWithProfile(user);
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
 
         Post post = new Post();
@@ -87,7 +87,8 @@ public class PostService {
                     .orElseThrow(() -> new RuntimeException("Follower not found"));
             String title = currentUser.getUsername() + " created a new post";
             String message = savedPost.getTitle();
-            String avatar = currentUser.getProfile().getProfileAvatar().getUrl();
+            Profile profile = profileService.getProfileByUser(currentUser);
+            String avatar = profile.getProfileAvatar().getUrl();
 
             Notification notification = new Notification();
             notification.setSender(currentUser);
@@ -104,10 +105,10 @@ public class PostService {
                         "type", NotificationType.POST.name(),
                         "postId", savedPost.getId().toString()
                 );
-                notificationService.sendNotification(follower.getFcmToken(), title, message, avatar, dataPayload);
+                notificationService.sendNotification(follower, title, message, avatar, dataPayload);
             }
         }
-        PostResponse postResponse = new PostResponse().toDTO(savedPost);
+        PostResponse postResponse = new PostResponse().toDTO(savedPost, profileResponseBuilder);
         return ResponseEntity.ok().body(postResponse);
     }
 
@@ -152,10 +153,11 @@ public class PostService {
     @Transactional
     public ResponseEntity<?> createGroupPost(Long groupId, CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
+        User user = (User) authentication.getPrincipal();
+        User currentUser = profileService.getUserWithProfile(user);
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
         Group group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
-        groupMembershipRepository.findByUserIdAndGroupIdAndIsDeleted(currentUser.getId(), groupId, false)
+        groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
 
         Post post = new Post();
@@ -178,8 +180,7 @@ public class PostService {
             if (!member.getId().equals(currentUser.getId())) {
                 String title = "New post in " + group.getName() + " group";
                 String message = currentUser.getUsername() + " created a new post in " + group.getName() + " group";
-                Profile profile = profileRepository.findById(currentUser.getProfile().getId())
-                        .orElseThrow(() -> new RuntimeException("Profile not found"));
+                Profile profile = profileService.getProfileByRole(currentUser);
                 String avatar = profile.getProfileAvatar().getUrl();
                 String actionUrl = "/group/" + group.getId() + "/posts/" + savedPost.getId();
 
@@ -199,7 +200,7 @@ public class PostService {
                             "postId", savedPost.getId().toString()
                     );
 
-                    notificationService.sendNotification(member.getFcmToken(), title, message, avatar, dataPayload);
+                    notificationService.sendNotification(member, title, message, avatar, dataPayload);
                 }
             }
         }
@@ -209,8 +210,10 @@ public class PostService {
     @Transactional
     public ResponseEntity<?> reviewPostInGroup(Long postId, boolean isApproved) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
+        User user = (User) authentication.getPrincipal();
+        User currentUser = profileService.getUserWithProfile(user);
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        User postOwner = profileService.getUserWithProfile(post.getUser());
         if (post.getIsDeleted().equals(true)) {
             return ResponseEntity.badRequest().body("Post is deleted");
         }
@@ -218,7 +221,7 @@ public class PostService {
         if (group.getIsDeleted().equals(true)) {
             return ResponseEntity.badRequest().body("Group is deleted");
         }
-        GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupIdAndIsDeleted(currentUser.getId(), group.getId(), false)
+        GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), group.getId())
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
         if (!groupMembership.getRole().equals(RoleName.ADMIN)) {
             return ResponseEntity.badRequest().body("You don't have permission to review posts in this group");
@@ -230,44 +233,17 @@ public class PostService {
 
             List<User> users = userRepository.findAllUsersByIdIn(memberIds);
             for (User member : users) {
-                if (!member.getId().equals(post.getUser().getId())) {
-                    String title = post.getUser().getUsername() + " created a new post in  " + group.getName() + " group";
+                if (!member.getId().equals(postOwner.getId())) {
+                    String title = postOwner.getUsername() + " created a new post in  " + group.getName() + " group";
                     String message = post.getTitle();
-                    Profile profile = profileRepository.findById(post.getUser().getProfile().getId())
-                            .orElseThrow(() -> new RuntimeException("Profile not found"));
+                    Profile profile = profileService.getProfileByUser(profileService.getUserWithProfile(post.getUser()));
                     String avatar = profile.getProfileAvatar().getUrl();
                     String actionUrl = "/posts/" + post.getId();
 
                     Notification notification = new Notification();
-                    notification.setSender(post.getUser());
+                    notification.setSender(postOwner);
                     notification.setGroup(group);
                     notification.setReceiver(member);
-                    notification.setType(NotificationType.POST);
-                    notification.setMessage(message);
-                    notification.setActionUrl(actionUrl);
-                    notificationRepository.save(notification);
-                    if (member.getFcmToken() != null) {
-                        Map<String, String> dataPayload = Map.of(
-                                "type", NotificationType.POST.name(),
-                                "postId", post.getId().toString(),
-                                "actionUrl", actionUrl,
-                                "GroupId", group.getId().toString()
-                        );
-                        notificationService.sendNotification(member.getFcmToken(), title, message, avatar, dataPayload);
-                    }
-
-                } else {
-                    String title = "Your post is approved";
-                    String message = "Your post is approved in " + group.getName() + " group";
-                    Profile profile = profileRepository.findById(currentUser.getProfile().getId())
-                            .orElseThrow(() -> new RuntimeException("Profile not found"));
-                    String avatar = profile.getProfileAvatar().getUrl();
-                    String actionUrl = "/posts/" + post.getId();
-
-                    Notification notification = new Notification();
-                    notification.setSender(currentUser);
-                    notification.setGroup(group);
-                    notification.setReceiver(post.getUser());
                     notification.setType(NotificationType.POST);
                     notification.setMessage(message);
                     notification.setActionUrl(actionUrl);
@@ -282,7 +258,35 @@ public class PostService {
                                 "actionUrl", actionUrl,
                                 "GroupId", group.getId().toString()
                         );
-                        notificationService.sendNotification(post.getUser().getFcmToken(), title, message, avatar, dataPayload);
+                        notificationService.sendNotification(member, title, message, avatar, dataPayload);
+                    }
+
+                } else {
+                    String title = "Your post is approved";
+                    String message = "Your post is approved in " + group.getName() + " group";
+                    Profile profile = profileService.getProfileByUser(currentUser);
+                    String avatar = profile.getProfileAvatar().getUrl();
+                    String actionUrl = "/posts/" + post.getId();
+
+                    Notification notification = new Notification();
+                    notification.setSender(currentUser);
+                    notification.setGroup(group);
+                    notification.setReceiver(postOwner);
+                    notification.setType(NotificationType.POST);
+                    notification.setMessage(message);
+                    notification.setActionUrl(actionUrl);
+                    notificationRepository.save(notification);
+
+                    firebaseService.pushNotificationToUser(notification, member);
+
+                    if (member.getFcmToken() != null) {
+                        Map<String, String> dataPayload = Map.of(
+                                "type", NotificationType.POST.name(),
+                                "postId", post.getId().toString(),
+                                "actionUrl", actionUrl,
+                                "GroupId", group.getId().toString()
+                        );
+                        notificationService.sendNotification(post.getUser(), title, message, avatar, dataPayload);
                     }
                 }
             }
@@ -291,8 +295,7 @@ public class PostService {
             post.setIsApproved(false);
             String title = "Your post is rejected";
             String message = "Your post is rejected from " + group.getName() + " group";
-            Profile profile = profileRepository.findById(currentUser.getProfile().getId())
-                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+            Profile profile = profileService.getProfileByUser(currentUser);
             String avatar = profile.getProfileAvatar().getUrl();
             String actionUrl = "/posts/" + post.getId();
 
@@ -311,7 +314,7 @@ public class PostService {
                 Map<String, String> dataPayload = Map.of(
                         "type", NotificationType.POST.name()
                 );
-                notificationService.sendNotification(post.getUser().getFcmToken(), title, message, avatar, dataPayload);
+                notificationService.sendNotification(post.getUser(), title, message, avatar, dataPayload);
             }
         }
         postRepository.save(post);
@@ -331,8 +334,8 @@ public class PostService {
         PrivacyName privacy = post.getPrivacy().getName();
 
         if (privacy.equals(PrivacyName.PUBLIC) || currentUser.getId().equals(post.getUser().getId())) {
-            return postReaction.map(reaction -> ResponseEntity.ok(new PostResponse().toDTOWithReaction(post, reaction.getReactionType().getName())))
-                    .orElseGet(() -> ResponseEntity.ok(new PostResponse().toDTO(post)));
+            return postReaction.map(reaction -> ResponseEntity.ok(new PostResponse().toDTOWithReaction(post, reaction.getReactionType().getName(), profileResponseBuilder)))
+                    .orElseGet(() -> ResponseEntity.ok(new PostResponse().toDTO(post, profileResponseBuilder)));
         }
 
         if (privacy.equals(PrivacyName.PRIVATE)) {
@@ -346,7 +349,7 @@ public class PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
-        groupMembershipRepository.findByUserIdAndGroupIdAndIsDeleted(currentUser.getId(), groupId, false)
+        groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -359,7 +362,7 @@ public class PostService {
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds);
+        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder);
     }
 
     public ResponseEntity<?> getPostByUser(int page, int size) {
@@ -376,7 +379,7 @@ public class PostService {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds));
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 
     @Transactional
@@ -427,7 +430,7 @@ public class PostService {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
 
-        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds));
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 
     public ResponseEntity<?> sharePost(SharePostRequest sharePostRequest) {
@@ -447,6 +450,22 @@ public class PostService {
         sharedPost.setSharedPost(post);
         postRepository.save(sharedPost);
         return ResponseEntity.ok().body("Post shared successfully");
+    }
+
+    public ResponseEntity<?> getPostByUserId(String userId, int page, int size) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Post> posts = postRepository.findByUserId(user.getId(), pageable);
+
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(user.getId());
+
+        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(user.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
+        Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
+        for (PostReaction reaction : reactions) {
+            reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
+        }
+
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 
 

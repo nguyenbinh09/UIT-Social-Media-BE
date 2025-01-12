@@ -3,6 +3,7 @@ package com.example.demo.dtos.responses;
 import com.example.demo.enums.GenderType;
 import com.example.demo.models.MediaFile;
 import com.example.demo.models.Profile;
+import com.example.demo.repositories.FollowRepository;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 public class ProfileResponse {
     private Long id;
-    private String studentCode;
     private String nickName;
     private String tagName;
     private GenderType gender;
@@ -26,14 +26,19 @@ public class ProfileResponse {
     private Boolean isPrivate;
     private ContactResponse contact;
     private List<SkillResponse> skills;
+    private Long followerCount;
+    private Long followingCount;
 
     public ProfileResponse toDTO(Profile profile) {
         this.setId(profile.getId());
-        this.setStudentCode(profile.getStudentCode());
         this.setNickName(profile.getNickName());
         this.setTagName(profile.getTagName());
         this.setGender(profile.getGender());
-        this.setUserId(profile.getUser().getId());
+        if (profile.getStudent() != null) {
+            this.setUserId(profile.getStudent().getUser().getId());
+        } else if (profile.getLecturer() != null) {
+            this.setUserId(profile.getLecturer().getUser().getId());
+        }
         this.setBio(profile.getBio());
         this.setAvatarUrl(profile.getProfileAvatar().getUrl());
         if (profile.getProfileBackground() != null) {

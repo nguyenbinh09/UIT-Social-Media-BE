@@ -15,8 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "privacy")
-@EqualsAndHashCode(callSuper = true)
-public class Privacy extends BaseModel{
+public class Privacy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

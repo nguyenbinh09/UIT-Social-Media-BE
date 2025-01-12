@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/profile")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER') or hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
 public class ProfileController {
     private final ProfileService profileService;

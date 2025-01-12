@@ -11,6 +11,7 @@ public class EmailValidationService {
     private final List<String> validEmails = List.of("student1@gm.uit.edu.vn", "lecturer1@gm.uit.edu.vn");
 
     public boolean isEmailValid(String email) {
-        return email.endsWith("@gm.uit.edu.vn") || validEmails.contains(email);
+//        return email.endsWith("@gm.uit.edu.vn") || validEmails.contains(email);
+        return true;
     }
 }

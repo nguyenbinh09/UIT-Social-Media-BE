@@ -67,14 +67,14 @@ public class AuthService {
         Role userRole = roleRepository.findById(registerUser.getRoleId())
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
-        user.setRoles(Collections.singletonList(userRole));
+        user.setRole(userRole);
         User savedUser = userRepository.save(user);
 
         String accessToken = jwtService.generateToken(savedUser);
         String refreshToken = jwtService.generateRefreshToken(savedUser);
 
-        List<String> roleNames = savedUser.getRoles().stream().map(role -> role.getName().name()).toList();
-        return new AuthResponse(accessToken, refreshToken, roleNames);
+        Role role = savedUser.getRole();
+        return new AuthResponse(accessToken, refreshToken, role.getName().name());
     }
 
     public AuthResponse loginUser(LoginUserRequest loginUser) {
@@ -84,8 +84,8 @@ public class AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        List<String> roleNames = user.getRoles().stream().map(role -> role.getName().name()).toList();
-        return new AuthResponse(accessToken, refreshToken, roleNames);
+        Role role = user.getRole();
+        return new AuthResponse(accessToken, refreshToken, role.getName().name());
     }
 
     public ResponseEntity<?> refreshToken(String refreshToken) {
@@ -96,8 +96,8 @@ public class AuthService {
         if (jwtService.validateToken(refreshToken, user)) {
             String newAccessToken = jwtService.generateToken(user);
 
-            List<String> roleNames = user.getRoles().stream().map(role -> role.getName().name()).toList();
-            return ResponseEntity.ok(new AuthResponse(newAccessToken, refreshToken, roleNames));
+            Role role = user.getRole();
+            return ResponseEntity.ok(new AuthResponse(newAccessToken, refreshToken, role.getName().name()));
         }
         return ResponseEntity.badRequest().body("Invalid refresh token.");
     }

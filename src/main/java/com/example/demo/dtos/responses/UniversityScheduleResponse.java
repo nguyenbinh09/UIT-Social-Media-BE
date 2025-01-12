@@ -30,5 +30,5 @@ public class UniversityScheduleResponse {
     private LocalDate ngaybd;
     private LocalDate ngaykt;
 
-    private List<LecturerResponse> magv;
+    private List<UniversityLecturerResponse> magv;
 }

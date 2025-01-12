@@ -1,11 +1,9 @@
 package com.example.demo.repositories;
 
-import com.example.demo.models.MediaFile;
+import com.example.demo.models.Organizer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MediaFileRepository extends JpaRepository<MediaFile, Long> {
-
-    MediaFile findByFileName(String s);
+public interface OrganizerRepository extends JpaRepository<Organizer, Long> {
 }

@@ -22,15 +22,6 @@ public class InformationDetail extends BaseModel {
     @Column(name = "full_name")
     private String fullName;
 
-    @Column(name = "major", nullable = false)
-    private String major;
-
-    @Column(name = "school_year", nullable = false)
-    private Integer schoolYear;
-
-    @Column(name = "activity_class", nullable = false)
-    private String activityClass;
-
     @Column(name = "work")
     private List<String> work;
 

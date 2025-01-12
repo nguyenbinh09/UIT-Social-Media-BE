@@ -5,6 +5,7 @@ import com.example.demo.enums.NotificationType;
 import com.example.demo.models.ChatGroup;
 import com.example.demo.models.User;
 import com.example.demo.repositories.NotificationRepository;
+import com.example.demo.repositories.UserRepository;
 import com.google.firebase.messaging.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -25,8 +26,11 @@ import java.util.Objects;
 @AllArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
+    private final UserService userService;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
-    public void sendNotification(String fcmToken, String title, String body, String avatar, Map<String, String> data) {
+    public void sendNotification(User user, String title, String body, String avatar, Map<String, String> data) {
+        String fcmToken = user.getFcmToken();
         try {
             Notification notification = Notification.builder()
                     .setTitle(title)
@@ -46,6 +50,14 @@ public class NotificationService {
 
             String response = FirebaseMessaging.getInstance().send(message);
             System.out.println("Successfully sent notification: " + response);
+        } catch (FirebaseMessagingException e) {
+            if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
+                    || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
+                System.err.println("Invalid FCM token, removing token: " + fcmToken);
+                userService.removeFcmToken(user);
+            } else {
+                throw new RuntimeException("Failed to send notification: " + e.getMessage(), e);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to send notification: " + e.getMessage(), e);
         }
@@ -86,7 +98,7 @@ public class NotificationService {
                     .setNotification(notification)
                     .putAllData(dataPayload)
                     .build();
-            
+
             BatchResponse response = FirebaseMessaging.getInstance().sendMulticast(multicastMessage);
 
             System.out.println("Successfully sent notifications to group members: " + response.getSuccessCount());
@@ -100,8 +112,13 @@ public class NotificationService {
 
     @Transactional
     public ResponseEntity<?> markAsRead(Long id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
         com.example.demo.models.Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
+        if (!currentUser.getId().equals(notification.getReceiver().getId())) {
+            return ResponseEntity.badRequest().body("You are not authorized to perform this action");
+        }
         notification.setIsRead(true);
         notificationRepository.save(notification);
         return ResponseEntity.ok("Notification marked as read");
@@ -114,7 +131,7 @@ public class NotificationService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<com.example.demo.models.Notification> notifications = notificationRepository.findByReceiver(currentUser, pageable);
 
-        List<NotificationResponse> notificationResponses = new NotificationResponse().mapNotificationsToDTOs(notifications);
+        List<NotificationResponse> notificationResponses = new NotificationResponse().mapNotificationsToDTOs(notifications, profileResponseBuilder);
         return ResponseEntity.ok(notificationResponses);
     }
 }

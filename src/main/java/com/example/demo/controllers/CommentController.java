@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comments")
 @AllArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
 @SecurityRequirement(name = "bearerAuth")
 public class CommentController {
     private final CommentService commentService;

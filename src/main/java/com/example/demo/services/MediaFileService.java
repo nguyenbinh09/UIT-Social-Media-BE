@@ -27,6 +27,7 @@ public class MediaFileService {
     private PostRepository postRepository;
     private CommentRepository commentRepository;
     private MessageRepository messageRepository;
+    private FirebaseService firebaseService;
 
     public List<MediaFile> uploadMediaFile(Long id, FeedItemType feedItemType, List<MultipartFile> mediaFiles) {
         List<MediaFile> savedMediaFiles = new ArrayList<>();
@@ -35,12 +36,9 @@ public class MediaFileService {
             MediaType mediaType = MediaFIleUtils.determineMediaType(file);
             String mediaURL = FirebaseService.uploadFile(file);
 
-            System.out.println("Media size: " + file.getSize() / 1024F);
-
             mediaFile.setFileName(file.getOriginalFilename());
             mediaFile.setUrl(mediaURL);
             mediaFile.setMediaType(mediaType);
-            mediaFile.setSize(file.getSize() / 1024F);
             System.out.println("Media size: " + file.getSize() / 1024F + " " + mediaFile.getSize());
             switch (feedItemType) {
                 case POST:
@@ -67,5 +65,20 @@ public class MediaFileService {
             FirebaseService.deleteFile(mediaFile.getUrl());  // Delete from Firebase
             mediaFileRepository.delete(mediaFile);
         }
+    }
+
+    public MediaFile uploadImage(MultipartFile imageFile) {
+        MediaFile mediaFile = new MediaFile();
+        MediaType mediaType = MediaFIleUtils.determineMediaType(imageFile);
+        if (mediaType != MediaType.IMAGE) {
+            throw new RuntimeException("Invalid media type. Please upload an image file");
+        }
+        String avatarURL = firebaseService.uploadFile(imageFile);
+        mediaFile.setFileName(imageFile.getOriginalFilename());
+        mediaFile.setUrl(avatarURL);
+        mediaFile.setMediaType(mediaType);
+        mediaFile.setSize(imageFile.getSize() / 1024F);
+        System.out.println(avatarURL);
+        return mediaFileRepository.save(mediaFile);
     }
 }

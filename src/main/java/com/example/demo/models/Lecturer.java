@@ -19,6 +19,10 @@ public class Lecturer {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private Profile profile;
+
     @Column(name = "lecturer_code", nullable = false)
     private String lecturerCode;
 
@@ -29,5 +33,5 @@ public class Lecturer {
     private String officeLocation;
 
     @Column(name = "years_of_experience")
-    private int yearsOfExperience;
+    private Integer yearsOfExperience;
 }

@@ -1,8 +1,11 @@
 package com.example.demo.dtos.responses;
 
 
+import com.example.demo.enums.RoleName;
+import com.example.demo.models.Student;
 import com.example.demo.models.User;
 import com.example.demo.repositories.ProfileRepository;
+import com.example.demo.services.ProfileResponseBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,25 +20,41 @@ public class UserResponse {
     private String id;
     private String username;
     private String email;
-    private String nickname;
-    private String tagName;
-    private String avatarUrl;
-    private List<String> roles;
+    private StudentResponse student;
+    private LecturerResponse lecturer;
+    private RoleName role;
 
-    public UserResponse toDTO(User user) {
-        this.setId(user.getId());
-        this.setUsername(user.getUsername());
-        this.setNickname(user.getProfile().getNickName());
-        this.setTagName(user.getProfile().getTagName());
-        this.setAvatarUrl(user.getProfile().getProfileAvatar().getUrl());
-        this.setEmail(user.getEmail());
-        this.setRoles(user.getRoles().stream().map(role -> role.getName().name()).toList());
-        return this;
+    public UserResponse toDTO(User user, ProfileResponseBuilder profileResponseBuilder) {
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId(user.getId());
+        userResponse.setUsername(user.getUsername());
+        if (user.getRole().getName().equals(RoleName.STUDENT)) {
+            userResponse.setStudent(new StudentResponse().toDTO(user.getStudent(), profileResponseBuilder));
+        } else if (user.getRole().getName().equals(RoleName.LECTURER)) {
+            userResponse.setLecturer(new LecturerResponse().toDTO(user.getLecturer(), profileResponseBuilder));
+        }
+        userResponse.setEmail(user.getEmail());
+        userResponse.setRole(user.getRole().getName());
+        return userResponse;
     }
 
-    public List<UserResponse> mapUsersToDTOs(List<User> users) {
+//    public UserResponse toDTO(User user) {
+//        UserResponse userResponse = new UserResponse();
+//        userResponse.setId(user.getId());
+//        userResponse.setUsername(user.getUsername());
+//        if (user.getRole().getName().equals(RoleName.STUDENT)) {
+//            userResponse.setStudent(new StudentResponse().toDTO(user.getStudent()));
+//        } else if (user.getRole().getName().equals(RoleName.LECTURER)) {
+//            userResponse.setLecturer(new LecturerResponse().toDTO(user.getLecturer()));
+//        }
+//        userResponse.setEmail(user.getEmail());
+//        userResponse.setRole(user.getRole().getName());
+//        return userResponse;
+//    }
+
+    public List<UserResponse> mapUsersToDTOs(List<User> users, ProfileResponseBuilder profileResponseBuilder) {
         return users.stream()
-                .map(this::toDTO)
+                .map(user -> new UserResponse().toDTO(user, profileResponseBuilder))
                 .collect(Collectors.toList());
     }
 }

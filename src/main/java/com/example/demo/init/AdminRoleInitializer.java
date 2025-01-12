@@ -19,5 +19,20 @@ public class AdminRoleInitializer {
             adminRole.setName(RoleName.ADMIN);
             roleRepository.save(adminRole);
         }
+        if (!roleRepository.existsByName(RoleName.LECTURER)) {
+            Role lecturerRole = new Role();
+            lecturerRole.setName(RoleName.LECTURER);
+            roleRepository.save(lecturerRole);
+        }
+        if (!roleRepository.existsByName(RoleName.STUDENT)) {
+            Role studentRole = new Role();
+            studentRole.setName(RoleName.STUDENT);
+            roleRepository.save(studentRole);
+        }
+        if (!roleRepository.existsByName(RoleName.ORGANIZER)) {
+            Role organizerRole = new Role();
+            organizerRole.setName(RoleName.ORGANIZER);
+            roleRepository.save(organizerRole);
+        }
     }
 }
