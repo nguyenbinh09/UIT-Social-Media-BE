@@ -1,6 +1,8 @@
 package com.example.demo.configs;
 
 
+import com.example.demo.enums.AccountStatus;
+import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.services.JWTService;
 import jakarta.servlet.FilterChain;
@@ -40,7 +42,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         jwtToken = authHeader.substring(7);
         username = jwtService.extractUsername(jwtToken);
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            if (user == null || user.getAccountStatus() != AccountStatus.ACTIVE) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                String responseBody = """
+                        {
+                            "status": 403,
+                            "message": "Account is deactivated or locked."
+                        }
+                        """;
+                response.getWriter().write(responseBody);
+                response.getWriter().flush();
+                response.getWriter().close();
+                return;
+            }
             if (jwtService.validateToken(jwtToken, user)) {
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         user,

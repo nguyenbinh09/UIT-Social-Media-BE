@@ -1,5 +1,6 @@
 package com.example.demo.repositories;
 
+import com.example.demo.enums.RoleName;
 import com.example.demo.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,4 +47,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u FROM User u WHERE u.fcmToken = :fcmToken AND u.fcmToken IS NOT NULL")
     Optional<User> findByFcmToken(@Param("fcmToken") String fcmToken);
+
+    @Query("SELECT u FROM User u WHERE (:role IS NULL OR u.role.name = :role)")
+    Page<User> findByRole(@Param("role") RoleName role, Pageable pageable);
 }

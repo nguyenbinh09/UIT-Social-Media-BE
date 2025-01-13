@@ -83,7 +83,6 @@ public class EducationService {
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             List<UniversityScoreResponse> responseScores = response.getBody();
-            System.out.println(responseScores);
             return ResponseEntity.ok(responseScores);
         } else {
             return ResponseEntity.status(response.getStatusCode())

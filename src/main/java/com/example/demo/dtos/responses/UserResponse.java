@@ -22,6 +22,7 @@ public class UserResponse {
     private String email;
     private StudentResponse student;
     private LecturerResponse lecturer;
+    private AdminResponse admin;
     private RoleName role;
 
     public UserResponse toDTO(User user, ProfileResponseBuilder profileResponseBuilder) {
@@ -33,6 +34,9 @@ public class UserResponse {
         } else if (user.getRole().getName().equals(RoleName.LECTURER)) {
             userResponse.setLecturer(new LecturerResponse().toDTO(user.getLecturer(), profileResponseBuilder));
         }
+//        else if (user.getRole().getName().equals(RoleName.ADMIN)) {
+//            userResponse.setAdmin(new AdminResponse().toDTO(user.getAdmin()));
+//        }
         userResponse.setEmail(user.getEmail());
         userResponse.setRole(user.getRole().getName());
         return userResponse;

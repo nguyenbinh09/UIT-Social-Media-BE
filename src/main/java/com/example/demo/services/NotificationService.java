@@ -1,6 +1,8 @@
 package com.example.demo.services;
 
+import com.example.demo.dtos.requests.AccountStatusRequest;
 import com.example.demo.dtos.responses.NotificationResponse;
+import com.example.demo.enums.AccountStatus;
 import com.example.demo.enums.NotificationType;
 import com.example.demo.models.ChatGroup;
 import com.example.demo.models.User;
@@ -26,8 +28,9 @@ import java.util.Objects;
 @AllArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final EmailService emailService;
 
     public void sendNotification(User user, String title, String body, String avatar, Map<String, String> data) {
         String fcmToken = user.getFcmToken();
@@ -54,7 +57,8 @@ public class NotificationService {
             if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED
                     || e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
                 System.err.println("Invalid FCM token, removing token: " + fcmToken);
-                userService.removeFcmToken(user);
+                user.setFcmToken(null);
+                userRepository.save(user);
             } else {
                 throw new RuntimeException("Failed to send notification: " + e.getMessage(), e);
             }
@@ -133,5 +137,19 @@ public class NotificationService {
 
         List<NotificationResponse> notificationResponses = new NotificationResponse().mapNotificationsToDTOs(notifications, profileResponseBuilder);
         return ResponseEntity.ok(notificationResponses);
+    }
+
+    public void sendAccountStatusNotification(User user, AccountStatusRequest newStatus) {
+        if (newStatus.getAccountStatus() == AccountStatus.ACTIVE) {
+            String title = "Account activated";
+            String body = "Your account has been activated. You can now access all features.";
+            emailService.sendEmail(user.getEmail(), title, body);
+        } else if (newStatus.getAccountStatus() == AccountStatus.BANNED) {
+            String title = "Account banned";
+            String body = "Your account has been banned.\n" +
+                    "Reason: " + newStatus.getReason() +
+                    "\nPlease contact support for more information.";
+            emailService.sendEmail(user.getEmail(), title, body);
+        }
     }
 }
