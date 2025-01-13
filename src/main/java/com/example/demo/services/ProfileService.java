@@ -79,7 +79,7 @@ public class ProfileService {
         if (currentUser.getRole().getName().equals(RoleName.STUDENT)) {
             Student student = new Student();
             student.setUser(currentUser);
-            student.setStudentCode(createProfileRequest.getCode());
+            student.setStudentCode(createProfileRequest.getStudent().getStudentCode());
             student.setMajor(createProfileRequest.getStudent().getMajor());
             student.setClassName(createProfileRequest.getStudent().getClassName());
             student.setYearOfAdmission(createProfileRequest.getStudent().getYearOfAdmission());
@@ -90,7 +90,7 @@ public class ProfileService {
         } else if (currentUser.getRole().getName().equals(RoleName.LECTURER)) {
             Lecturer lecturer = new Lecturer();
             lecturer.setUser(currentUser);
-            lecturer.setLecturerCode(createProfileRequest.getCode());
+            lecturer.setLecturerCode(createProfileRequest.getLecturer().getLecturerCode());
             lecturer.setDepartment(createProfileRequest.getLecturer().getDepartment());
             lecturer.setOfficeLocation(createProfileRequest.getLecturer().getOfficeLocation());
             lecturer.setYearsOfExperience(createProfileRequest.getLecturer().getYearsOfExperience());
