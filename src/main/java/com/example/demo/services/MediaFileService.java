@@ -39,7 +39,7 @@ public class MediaFileService {
             mediaFile.setFileName(file.getOriginalFilename());
             mediaFile.setUrl(mediaURL);
             mediaFile.setMediaType(mediaType);
-            System.out.println("Media size: " + file.getSize() / 1024F + " " + mediaFile.getSize());
+            mediaFile.setSize(file.getSize() / 1024F);
             switch (feedItemType) {
                 case POST:
                     Post post = postRepository.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));
@@ -78,7 +78,6 @@ public class MediaFileService {
         mediaFile.setUrl(avatarURL);
         mediaFile.setMediaType(mediaType);
         mediaFile.setSize(imageFile.getSize() / 1024F);
-        System.out.println(avatarURL);
         return mediaFileRepository.save(mediaFile);
     }
 }
