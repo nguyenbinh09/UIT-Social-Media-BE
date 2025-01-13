@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 public class CreateProfileRequest {
-    private String code;
     private String nickName;
     private String tagName;
     private GenderType gender;
