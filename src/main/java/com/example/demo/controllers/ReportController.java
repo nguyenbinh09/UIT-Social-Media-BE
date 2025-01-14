@@ -29,11 +29,11 @@ public class ReportController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/getReports")
+    @GetMapping("/getReports")
     public ResponseEntity<?> getReports(@RequestParam(value = "status", required = false) ReportStatus status,
                                         @RequestParam(value = "page", defaultValue = "0") int page,
                                         @RequestParam(value = "size", defaultValue = "10") int size,
-                                        @RequestParam(value = "sortBy", defaultValue = "createAt") String sortBy,
+                                        @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
                                         @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir,
                                         PagedResourcesAssembler assembler) {
         try {
@@ -48,6 +48,16 @@ public class ReportController {
     public ResponseEntity<?> resolveReport(@PathVariable Long reportId, @RequestBody ResolveReportRequest resolveReportRequest) {
         try {
             return reportService.resolveReport(reportId, resolveReportRequest);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/warn/{reportId}")
+    public ResponseEntity<?> warnPostOwner(@PathVariable Long reportId) {
+        try {
+            return reportService.warnPostOwner(reportId);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
