@@ -14,10 +14,9 @@ import java.util.List;
 
 @Repository
 public interface ReportRepository extends JpaRepository<PostReport, Long> {
-    List<PostReport> findByStatus(ReportStatus status, Pageable pageable);
+//    List<PostReport> findByStatus(ReportStatus status, Pageable pageable);
 
-    boolean existsByPostAndReportedBy(Post post, User currentUser);
+    boolean existsByPostAndReportedByAndStatus(Post post, User currentUser, ReportStatus status);
 
-    @Query("SELECT r FROM PostReport r WHERE r.status = :status")
-    Page<PostReport> findByStatusWithPage(ReportStatus status, Pageable pageable);
+    Page<PostReport> findByStatus(ReportStatus status, Pageable pageable);
 }

@@ -145,8 +145,7 @@ public class PostService {
             List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
 //        firebaseService.pushPostToReceivers(savedPost, followerIds);
             for (String followerId : followerIds) {
-                User follower = userRepository.findById(followerId)
-                        .orElseThrow(() -> new RuntimeException("Follower not found"));
+                User follower = profileService.getUserWithProfile(userRepository.findById(followerId).orElseThrow(() -> new RuntimeException("Follower not found")));
                 String title = currentUser.getUsername() + " created a new post";
                 String message = savedPost.getTitle();
                 Profile profile = profileService.getProfileByUser(currentUser);
@@ -160,7 +159,7 @@ public class PostService {
                 notification.setActionUrl("/posts/" + savedPost.getId());
                 notificationRepository.save(notification);
 
-//            firebaseService.pushNotificationToUser(notification, follower);
+                firebaseService.pushNotificationToUser(notification, follower);
 
                 if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
                     Map<String, String> dataPayload = Map.of(
@@ -214,8 +213,9 @@ public class PostService {
             return ResponseEntity.badRequest().body("You are not authorized to delete this post");
         }
         post.setIsDeleted(true);
-        postRepository.save(post);
-        return ResponseEntity.ok().body("Post deleted successfully");
+        Post savedPost = postRepository.save(post);
+        PostResponse postResponse = new PostResponse().toDTO(savedPost, profileResponseBuilder);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     @Transactional
@@ -559,10 +559,9 @@ public class PostService {
         Post savedPost = postRepository.save(post);
         User postOwner = profileService.getUserWithProfile(savedPost.getUser());
 
-        String postOwnerTitle = currentUser.getUsername() + " approved your post";
+        String postOwnerTitle = "Amin approved your post";
         String postOwnerMessage = savedPost.getTitle();
-        Profile postOwnerProfile = profileService.getProfileByUser(postOwner);
-        String postOwnerAvatar = postOwnerProfile.getProfileAvatar().getUrl();
+        String adminAvatar = "https://firebasestorage.googleapis.com/v0/b/uit-social-network-f592d.appspot.com/o/admin-avatar.jpg?alt=media&token=91551f76-4094-42de-b3c4-2ceb0622e812";
 
         Notification postOwnernotification = new Notification();
         postOwnernotification.setSender(currentUser);
@@ -572,7 +571,7 @@ public class PostService {
         postOwnernotification.setActionUrl("/posts/" + savedPost.getId());
         notificationRepository.save(postOwnernotification);
 
-//            firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
+        firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
 
         if (postOwner.getFcmToken() != null) {
             Map<String, String> dataPayload = Map.of(
@@ -580,14 +579,13 @@ public class PostService {
                     "postId", savedPost.getId().toString(),
                     "actionUrl", postOwnernotification.getActionUrl()
             );
-            notificationService.sendNotification(postOwner, postOwnerTitle, postOwnerMessage, postOwnerAvatar, dataPayload);
+            notificationService.sendNotification(postOwner, postOwnerTitle, postOwnerMessage, adminAvatar, dataPayload);
         }
 
         List<String> followerIds = followRepository.findFollowerIdsByFollowedId(postOwner.getId());
 
         for (String followerId : followerIds) {
-            User follower = userRepository.findById(followerId)
-                    .orElseThrow(() -> new RuntimeException("Follower not found"));
+            User follower = profileService.getUserWithProfile(userRepository.findById(followerId).orElseThrow(() -> new RuntimeException("Follower not found")));
             String title = postOwner.getUsername() + " created a new post";
             String message = savedPost.getTitle();
             Profile profile = profileService.getProfileByUser(postOwner);
@@ -601,7 +599,7 @@ public class PostService {
             notification.setActionUrl("/posts/" + savedPost.getId());
             notificationRepository.save(notification);
 
-//            firebaseService.pushNotificationToUser(notification, follower);
+            firebaseService.pushNotificationToUser(notification, follower);
 
             if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
                 Map<String, String> dataPayload = Map.of(
@@ -630,11 +628,10 @@ public class PostService {
         post.setRejectionReason(rejectionReason);
         Post savedPost = postRepository.save(post);
         User postOwner = profileService.getUserWithProfile(savedPost.getUser());
-        Profile postOwnerProfile = profileService.getProfileByUser(postOwner);
 
         String postOwnerTitle = "Your post has been rejected";
         String postOwnerMessage = "Reason: " + rejectionReason + ". Please review and try again.";
-        String postOwnerAvatar = postOwnerProfile.getProfileAvatar().getUrl();
+        String postOwnerAvatar = "https://firebasestorage.googleapis.com/v0/b/uit-social-network-f592d.appspot.com/o/admin-avatar.jpg?alt=media&token=91551f76-4094-42de-b3c4-2ceb0622e812";
         Notification postOwnernotification = new Notification();
         postOwnernotification.setSender(currentUser);
         postOwnernotification.setReceiver(postOwner);
@@ -643,7 +640,7 @@ public class PostService {
         postOwnernotification.setActionUrl("rejected_posts/" + savedPost.getId());
         notificationRepository.save(postOwnernotification);
 
-//            firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
+        firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
 
         if (postOwner.getFcmToken() != null) {
             Map<String, String> dataPayload = Map.of(
