@@ -34,7 +34,7 @@ public class CommentController {
     }
 
     @GetMapping("/getComments")
-    public ResponseEntity<?> getComments(@RequestParam Long postId, @RequestParam int page, @RequestParam int size, @RequestParam PagedResourcesAssembler assembler) {
+    public ResponseEntity<?> getComments(@RequestParam Long postId, @RequestParam int page, @RequestParam int size, PagedResourcesAssembler assembler) {
         try {
             return commentService.getCommentsWithReplies(postId, page, size, assembler);
         } catch (Exception e) {
@@ -43,7 +43,7 @@ public class CommentController {
     }
 
     @GetMapping("/{commentId}/getReplies")
-    public ResponseEntity<?> getReplies(@PathVariable Long commentId, @RequestParam int page, @RequestParam int size, @RequestParam PagedResourcesAssembler assembler) {
+    public ResponseEntity<?> getReplies(@PathVariable Long commentId, @RequestParam int page, @RequestParam int size, PagedResourcesAssembler assembler) {
         try {
             return commentService.getReplies(commentId, page, size, assembler);
         } catch (Exception e) {
