@@ -4,17 +4,11 @@ import com.example.demo.dtos.responses.GroupResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.ReactionTypeName;
-import com.example.demo.models.Group;
-import com.example.demo.models.Post;
-import com.example.demo.models.PostReaction;
-import com.example.demo.models.User;
+import com.example.demo.models.*;
 import com.example.demo.services.ProfileResponseBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -61,14 +55,38 @@ public class SearchRepository {
 
         Predicate usernamePredicate = cb.like(cb.lower(root.get("username")), "%" + keyword.toLowerCase() + "%");
         Predicate emailPredicate = cb.like(cb.lower(root.get("email")), "%" + keyword.toLowerCase() + "%");
-        Predicate nickNamePredicate = cb.like(cb.lower(root.join("profile").get("nickName")), "%" + keyword.toLowerCase() + "%");
-        Predicate tagNamePredicate = cb.like(cb.lower(root.join("profile").get("tagName")), "%" + keyword.toLowerCase() + "%");
 
-        query.select(root).where(cb.or(usernamePredicate, emailPredicate, nickNamePredicate, tagNamePredicate));
+        Join<User, Student> studentJoin = root.join("student", JoinType.LEFT);
+        Join<User, Lecturer> lecturerJoin = root.join("lecturer", JoinType.LEFT);
+        Join<Student, Profile> studentProfileJoin = studentJoin.join("profile", JoinType.LEFT);
+        Join<Lecturer, Profile> lecturerProfileJoin = lecturerJoin.join("profile", JoinType.LEFT);
+
+        Predicate studentNickNamePredicate = cb.like(cb.lower(studentProfileJoin.get("nickName")), "%" + keyword.toLowerCase() + "%");
+        Predicate studentTagNamePredicate = cb.like(cb.lower(studentProfileJoin.get("tagName")), "%" + keyword.toLowerCase() + "%");
+        Predicate studentStudentCodePredicate = cb.like(cb.lower(studentJoin.get("studentCode")), "%" + keyword.toLowerCase() + "%");
+
+        Predicate lecturerNickNamePredicate = cb.like(cb.lower(lecturerProfileJoin.get("nickName")), "%" + keyword.toLowerCase() + "%");
+        Predicate lecturerTagNamePredicate = cb.like(cb.lower(lecturerProfileJoin.get("tagName")), "%" + keyword.toLowerCase() + "%");
+        Predicate lecturerLecturerCodePredicate = cb.like(cb.lower(lecturerJoin.get("lecturerCode")), "%" + keyword.toLowerCase() + "%");
+
+        query.select(root).where(
+                cb.or(
+                        usernamePredicate,
+                        emailPredicate,
+                        studentNickNamePredicate,
+                        studentTagNamePredicate,
+                        studentStudentCodePredicate,
+                        lecturerNickNamePredicate,
+                        lecturerTagNamePredicate,
+                        lecturerLecturerCodePredicate
+                )
+        );
+
         List<User> users = entityManager.createQuery(query).getResultList();
 
         return new UserResponse().mapUsersToDTOs(users, profileResponseBuilder);
     }
+
 
     public List<GroupResponse> searchGroups(String keyword) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
