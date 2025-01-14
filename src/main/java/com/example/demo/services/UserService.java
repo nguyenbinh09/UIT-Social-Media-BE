@@ -35,7 +35,6 @@ public class UserService {
     private final ProfileService profileService;
     private final NotificationService notificationService;
     private final ProfileResponseBuilder profileResponseBuilder;
-    private final PostRepository postRepository;
 
     public ResponseEntity<?> getMe() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

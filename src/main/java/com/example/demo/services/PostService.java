@@ -3,6 +3,8 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.CreatePostRequest;
 import com.example.demo.dtos.requests.SharePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
+import com.example.demo.dtos.responses.ModerationResponse;
+import com.example.demo.dtos.responses.PendingPostResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.enums.*;
 import com.example.demo.models.*;
@@ -10,21 +12,26 @@ import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+//@AllArgsConstructor
 public class PostService {
     private final List<Post> newPostsBuffer = new LinkedList<>();
     private final PostRepository postRepository;
@@ -41,6 +48,42 @@ public class PostService {
     private final NotificationRepository notificationRepository;
     private final ProfileService profileService;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final RestTemplate restTemplate;
+
+    public PostService(PostRepository postRepository,
+                       FirebaseService firebaseService,
+                       FollowRepository followRepository,
+                       PrivacyRepository privacyRepository,
+                       MediaFileService mediaFileService,
+                       UserRepository userRepository,
+                       PostReactionRepository postReactionRepository,
+                       GroupRepository groupRepository,
+                       GroupMembershipRepository groupMembershipRepository,
+                       SavedPostRepository savedPostRepository,
+                       NotificationService notificationService,
+                       NotificationRepository notificationRepository,
+                       ProfileService profileService,
+                       ProfileResponseBuilder profileResponseBuilder,
+                       RestTemplate restTemplate) {
+        this.postRepository = postRepository;
+        this.firebaseService = firebaseService;
+        this.followRepository = followRepository;
+        this.privacyRepository = privacyRepository;
+        this.mediaFileService = mediaFileService;
+        this.userRepository = userRepository;
+        this.postReactionRepository = postReactionRepository;
+        this.groupRepository = groupRepository;
+        this.groupMembershipRepository = groupMembershipRepository;
+        this.savedPostRepository = savedPostRepository;
+        this.notificationService = notificationService;
+        this.notificationRepository = notificationRepository;
+        this.profileService = profileService;
+        this.profileResponseBuilder = profileResponseBuilder;
+        this.restTemplate = restTemplate;
+    }
+
+    @Value("${uit-model.url}")
+    private String modelUrl;
 
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -65,51 +108,71 @@ public class PostService {
     public ResponseEntity<?> createPost(CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
+
         User currentUser = profileService.getUserWithProfile(user);
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
 
+        String apiUrl = modelUrl + "/predict";
+        Map<String, String> payload = Map.of("text", postRequest.getTextContent());
+        ResponseEntity<ModerationResponse> response = restTemplate.postForEntity(
+                apiUrl,
+                payload,
+                ModerationResponse.class
+        );
+
+        ModerationResponse responseBody = response.getBody();
+        boolean isClean;
+        if (response.getStatusCode().is2xxSuccessful() && responseBody != null) {
+            isClean = responseBody.getPredictions().stream().allMatch(pred -> pred.equalsIgnoreCase("Clean"));
+        } else {
+            isClean = false;
+        }
         Post post = new Post();
         post.setTitle(postRequest.getTitle());
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
         post.setLink(postRequest.getLink());
+        post.setStatus(isClean ? PostStatus.APPROVED : PostStatus.PENDING);
         Post savedPost = postRepository.save(post);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
             savedPost.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
         }
-
-        List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
+        if (!isClean) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Your post has been flagged for moderation. It will be reviewed by an admin before being published.");
+        } else {
+            List<String> followerIds = followRepository.findFollowerIdsByFollowedId(currentUser.getId());
 //        firebaseService.pushPostToReceivers(savedPost, followerIds);
-        for (String followerId : followerIds) {
-            User follower = userRepository.findById(followerId)
-                    .orElseThrow(() -> new RuntimeException("Follower not found"));
-            String title = currentUser.getUsername() + " created a new post";
-            String message = savedPost.getTitle();
-            Profile profile = profileService.getProfileByUser(currentUser);
-            String avatar = profile.getProfileAvatar().getUrl();
+            for (String followerId : followerIds) {
+                User follower = userRepository.findById(followerId)
+                        .orElseThrow(() -> new RuntimeException("Follower not found"));
+                String title = currentUser.getUsername() + " created a new post";
+                String message = savedPost.getTitle();
+                Profile profile = profileService.getProfileByUser(currentUser);
+                String avatar = profile.getProfileAvatar().getUrl();
 
-            Notification notification = new Notification();
-            notification.setSender(currentUser);
-            notification.setReceiver(follower);
-            notification.setType(NotificationType.POST);
-            notification.setMessage(message);
-            notification.setActionUrl("/posts/" + savedPost.getId());
-            notificationRepository.save(notification);
+                Notification notification = new Notification();
+                notification.setSender(currentUser);
+                notification.setReceiver(follower);
+                notification.setType(NotificationType.POST);
+                notification.setMessage(message);
+                notification.setActionUrl("/posts/" + savedPost.getId());
+                notificationRepository.save(notification);
 
-            firebaseService.pushNotificationToUser(notification, follower);
+//            firebaseService.pushNotificationToUser(notification, follower);
 
-            if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
-                Map<String, String> dataPayload = Map.of(
-                        "type", NotificationType.POST.name(),
-                        "postId", savedPost.getId().toString()
-                );
-                notificationService.sendNotification(follower, title, message, avatar, dataPayload);
+                if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
+                    Map<String, String> dataPayload = Map.of(
+                            "type", NotificationType.POST.name(),
+                            "postId", savedPost.getId().toString()
+                    );
+                    notificationService.sendNotification(follower, title, message, avatar, dataPayload);
+                }
             }
+            PostResponse postResponse = new PostResponse().toDTO(savedPost, profileResponseBuilder);
+            return ResponseEntity.ok().body(postResponse);
         }
-        PostResponse postResponse = new PostResponse().toDTO(savedPost, profileResponseBuilder);
-        return ResponseEntity.ok().body(postResponse);
     }
 
     @Transactional
@@ -117,8 +180,14 @@ public class PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         Post post = postRepository.findById(postRequest.getId()).orElseThrow(() -> new RuntimeException("Post not found"));
+        updatePost(post, postRequest, mediaFiles, currentUser);
+        postRepository.save(post);
+        return ResponseEntity.ok().body("Post updated successfully");
+    }
+
+    public void updatePost(Post post, UpdatePostRequest postRequest, List<MultipartFile> mediaFiles, User currentUser) {
         if (!post.getUser().getId().equals(currentUser.getId())) {
-            return ResponseEntity.badRequest().body("You are not authorized to update this post");
+            throw new RuntimeException("You are not authorized to update this post");
         }
         if (postRequest.getTitle() != null && !post.getTitle().equals(postRequest.getTitle())) {
             post.setTitle(postRequest.getTitle());
@@ -134,7 +203,6 @@ public class PostService {
             mediaFileService.deleteMediaFiles(post.getMediaFiles());
             post.setMediaFiles(mediaFileService.uploadMediaFile(post.getId(), FeedItemType.POST, mediaFiles));
         }
-        return ResponseEntity.ok().body("Post updated successfully");
     }
 
     @Transactional
@@ -433,6 +501,7 @@ public class PostService {
         return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 
+    @Transactional
     public ResponseEntity<?> sharePost(SharePostRequest sharePostRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -468,9 +537,148 @@ public class PostService {
         return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 
+    public ResponseEntity<?> getPendingPosts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
+        List<Post> pendingPosts = postRepository.findByStatus(PostStatus.PENDING, pageable);
+        List<PendingPostResponse> postResponses = new PendingPostResponse().mapPostsToDTOs(pendingPosts, profileResponseBuilder);
+        return ResponseEntity.ok(postResponses);
+    }
 
-//    public ResponseEntity<?> createImage(List<MultipartFile> files) {
-//        return ResponseEntity.ok(mediaFileService.uploadMediaFile(files));
-//    }
+    @Transactional
+    public ResponseEntity<?> approvePost(Long postId, PostStatus status) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (status.equals(PostStatus.PENDING) || status.equals(PostStatus.REJECTED)) {
+            return ResponseEntity.badRequest().body("Invalid post status");
+        } else if (post.getStatus().equals(PostStatus.APPROVED)) {
+            return ResponseEntity.badRequest().body("Post is already approved");
+        }
+        post.setStatus(status);
+        post.setReviewedBy(currentUser);
+        Post savedPost = postRepository.save(post);
+        User postOwner = profileService.getUserWithProfile(savedPost.getUser());
 
+        String postOwnerTitle = currentUser.getUsername() + " approved your post";
+        String postOwnerMessage = savedPost.getTitle();
+        Profile postOwnerProfile = profileService.getProfileByUser(postOwner);
+        String postOwnerAvatar = postOwnerProfile.getProfileAvatar().getUrl();
+
+        Notification postOwnernotification = new Notification();
+        postOwnernotification.setSender(currentUser);
+        postOwnernotification.setReceiver(postOwner);
+        postOwnernotification.setType(NotificationType.POST_APPROVAL);
+        postOwnernotification.setMessage(postOwnerMessage);
+        postOwnernotification.setActionUrl("/posts/" + savedPost.getId());
+        notificationRepository.save(postOwnernotification);
+
+//            firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
+
+        if (postOwner.getFcmToken() != null) {
+            Map<String, String> dataPayload = Map.of(
+                    "type", NotificationType.POST_APPROVAL.name(),
+                    "postId", savedPost.getId().toString(),
+                    "actionUrl", postOwnernotification.getActionUrl()
+            );
+            notificationService.sendNotification(postOwner, postOwnerTitle, postOwnerMessage, postOwnerAvatar, dataPayload);
+        }
+
+        List<String> followerIds = followRepository.findFollowerIdsByFollowedId(postOwner.getId());
+
+        for (String followerId : followerIds) {
+            User follower = userRepository.findById(followerId)
+                    .orElseThrow(() -> new RuntimeException("Follower not found"));
+            String title = postOwner.getUsername() + " created a new post";
+            String message = savedPost.getTitle();
+            Profile profile = profileService.getProfileByUser(postOwner);
+            String avatar = profile.getProfileAvatar().getUrl();
+
+            Notification notification = new Notification();
+            notification.setSender(postOwner);
+            notification.setReceiver(follower);
+            notification.setType(NotificationType.POST);
+            notification.setMessage(message);
+            notification.setActionUrl("/posts/" + savedPost.getId());
+            notificationRepository.save(notification);
+
+//            firebaseService.pushNotificationToUser(notification, follower);
+
+            if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
+                Map<String, String> dataPayload = Map.of(
+                        "type", NotificationType.POST.name(),
+                        "postId", savedPost.getId().toString(),
+                        "actionUrl", notification.getActionUrl()
+                );
+                notificationService.sendNotification(follower, title, message, avatar, dataPayload);
+            }
+        }
+        return ResponseEntity.ok("Approved post successfully");
+    }
+
+    @Transactional
+    public ResponseEntity<?> rejectPost(Long postId, PostStatus postStatus, String rejectionReason) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (postStatus.equals(PostStatus.PENDING) || postStatus.equals(PostStatus.APPROVED)) {
+            return ResponseEntity.badRequest().body("Invalid post status");
+        } else if (post.getStatus().equals(PostStatus.REJECTED)) {
+            return ResponseEntity.badRequest().body("Post is already rejected");
+        }
+        post.setStatus(postStatus);
+        post.setReviewedBy(currentUser);
+        post.setRejectionReason(rejectionReason);
+        Post savedPost = postRepository.save(post);
+        User postOwner = profileService.getUserWithProfile(savedPost.getUser());
+        Profile postOwnerProfile = profileService.getProfileByUser(postOwner);
+
+        String postOwnerTitle = "Your post has been rejected";
+        String postOwnerMessage = "Reason: " + rejectionReason + ". Please review and try again.";
+        String postOwnerAvatar = postOwnerProfile.getProfileAvatar().getUrl();
+        Notification postOwnernotification = new Notification();
+        postOwnernotification.setSender(currentUser);
+        postOwnernotification.setReceiver(postOwner);
+        postOwnernotification.setType(NotificationType.POST_REJECTION);
+        postOwnernotification.setMessage(postOwnerMessage);
+        postOwnernotification.setActionUrl("rejected_posts/" + savedPost.getId());
+        notificationRepository.save(postOwnernotification);
+
+//            firebaseService.pushNotificationToUser(postOwnernotification, postOwner);
+
+        if (postOwner.getFcmToken() != null) {
+            Map<String, String> dataPayload = Map.of(
+                    "type", NotificationType.POST_REJECTION.name(),
+                    "postId", savedPost.getId().toString(),
+                    "reason", rejectionReason,
+                    "actionUrl", postOwnernotification.getActionUrl()
+            );
+            notificationService.sendNotification(postOwner, postOwnerTitle, postOwnerMessage, postOwnerAvatar, dataPayload);
+        }
+        return ResponseEntity.ok("Rejected post successfully");
+    }
+
+    public ResponseEntity<?> updateRejectedPost(Long postId, UpdatePostRequest updatePostRequest, List<MultipartFile> mediaFiles) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (!post.getStatus().equals(PostStatus.REJECTED)) {
+            return ResponseEntity.badRequest().body("Post is not rejected");
+        }
+        if (!post.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.badRequest().body("You are not authorized to update this post");
+        }
+        updatePost(post, updatePostRequest, mediaFiles, currentUser);
+        post.setRejectionReason(null);
+        post.setStatus(PostStatus.PENDING);
+        post.setReviewedBy(null);
+        postRepository.save(post);
+        return ResponseEntity.ok("Post updated successfully");
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void deleteOldRejectedPosts() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(30);
+        List<Post> postsToDelete = postRepository.findAllByStatusAndUpdatedAtBefore(PostStatus.REJECTED, threshold);
+        postRepository.deleteAll(postsToDelete);
+    }
 }

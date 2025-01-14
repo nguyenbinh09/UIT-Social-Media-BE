@@ -155,4 +155,13 @@ public class PostController {
         }
     }
 
+    @PutMapping(value = "/updateRejectedPost", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateRejectedPost(@RequestParam Long postId, @RequestParam String updatePostRequestString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
+        try {
+            UpdatePostRequest updatePostRequest = objectMapper.readValue(updatePostRequestString, UpdatePostRequest.class);
+            return postService.updateRejectedPost(postId, updatePostRequest, mediaFiles);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
