@@ -12,4 +12,6 @@ public enum NotificationType {
     GROUP_MEMBERSHIP_RESPONSE,
     POST_REACTION,
     GROUP_ADD_MEMBER,
+    POST_APPROVAL,
+    POST_REJECTION,
 }

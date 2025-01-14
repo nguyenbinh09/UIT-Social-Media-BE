@@ -1,6 +1,7 @@
 package com.example.demo.dtos.responses;
 
 
+import com.example.demo.enums.AccountStatus;
 import com.example.demo.enums.RoleName;
 import com.example.demo.models.Student;
 import com.example.demo.models.User;
@@ -24,6 +25,7 @@ public class UserResponse {
     private LecturerResponse lecturer;
     private AdminResponse admin;
     private RoleName role;
+    private AccountStatus accountStatus;
 
     public UserResponse toDTO(User user, ProfileResponseBuilder profileResponseBuilder) {
         UserResponse userResponse = new UserResponse();
@@ -39,6 +41,7 @@ public class UserResponse {
 //        }
         userResponse.setEmail(user.getEmail());
         userResponse.setRole(user.getRole().getName());
+        userResponse.setAccountStatus(user.getAccountStatus());
         return userResponse;
     }
 

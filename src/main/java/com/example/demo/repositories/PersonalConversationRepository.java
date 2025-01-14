@@ -29,4 +29,5 @@ public interface PersonalConversationRepository extends JpaRepository<PersonalCo
             "AND c.isPending = true " +
             "ORDER BY (SELECT MAX(msg.createdAt) FROM Message msg WHERE msg.conversation = c) DESC")
     List<PersonalConversation> findPendingConversationsWithLatestMessages(@Param("userId") String userId);
+
 }

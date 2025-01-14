@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import com.example.demo.enums.PostStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -63,6 +64,17 @@ public class Post extends BaseModel {
 
     @Column(name = "is_approved")
     private Boolean isApproved = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private PostStatus status;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by")
+    private User reviewedBy;
+
+    @Column(name = "rejectionReason")
+    private String rejectionReason;
 }
 
 
