@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LecturerResponse {
     private Long id;
-    private User user;
+    private String userId;
     private ProfileResponse profile;
     private String lecturerCode;
     private String department;
@@ -23,7 +23,7 @@ public class LecturerResponse {
 
     public LecturerResponse toDTO(Lecturer lecturer, ProfileResponseBuilder profileResponseBuilder) {
         this.setId(lecturer.getId());
-        this.setUser(lecturer.getUser());
+        this.setUserId(lecturer.getUser().getId());
         this.setProfile(profileResponseBuilder.toDTO(lecturer.getProfile()));
         this.setLecturerCode(lecturer.getLecturerCode());
         this.setDepartment(lecturer.getDepartment());
@@ -34,7 +34,7 @@ public class LecturerResponse {
 
     public LecturerResponse toDTO(Lecturer lecturer) {
         this.setId(lecturer.getId());
-        this.setUser(lecturer.getUser());
+        this.setUserId(lecturer.getUser().getId());
         this.setProfile(new ProfileResponse().toDTO(lecturer.getProfile()));
         this.setLecturerCode(lecturer.getLecturerCode());
         this.setDepartment(lecturer.getDepartment());
