@@ -1,5 +1,6 @@
 package com.example.demo.dtos.responses;
 
+import com.example.demo.enums.PostStatus;
 import com.example.demo.enums.ReactionTypeName;
 import com.example.demo.models.MediaFile;
 import com.example.demo.models.Post;
@@ -21,6 +22,7 @@ public class PostResponse {
     private Long id;
     private String textContent;
     private String title;
+    private String link;
     private PrivacyResponse privacy;
     private UserResponse user;
     private GroupResponse group;
@@ -29,6 +31,7 @@ public class PostResponse {
     private LocalDateTime createdAt;
     private PostResponse sharedPost;
     private Boolean isSaved;
+    private PostStatus status;
     private int reactionCount;
     private int commentCount;
 
@@ -45,6 +48,8 @@ public class PostResponse {
         this.setReactionCount(post.getReactions().size());
         this.setCommentCount(post.getComments().size());
         this.setCreatedAt(post.getCreatedAt());
+        this.setStatus(post.getStatus());
+        this.setLink(post.getLink());
         if (post.getIsShared())
             this.setSharedPost(new PostResponse().toDTO(post.getSharedPost(), profileResponseBuilder));
         return this;
