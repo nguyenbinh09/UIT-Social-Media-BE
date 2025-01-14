@@ -1,10 +1,16 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.AccountStatusRequest;
+import com.example.demo.dtos.requests.AdminUpdateUserRequest;
 import com.example.demo.dtos.responses.CommentResponse;
+import com.example.demo.dtos.responses.PendingPostResponse;
+import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.dtos.responses.UserResponse;
+import com.example.demo.enums.PostStatus;
 import com.example.demo.enums.RoleName;
+import com.example.demo.models.Post;
 import com.example.demo.models.User;
+import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -29,6 +35,7 @@ public class UserService {
     private final ProfileService profileService;
     private final NotificationService notificationService;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final PostRepository postRepository;
 
     public ResponseEntity<?> getMe() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -67,5 +74,17 @@ public class UserService {
         userRepository.save(user);
         notificationService.sendAccountStatusNotification(user, accountStatusRequest);
         return ResponseEntity.ok("Account status updated successfully");
+    }
+
+    public ResponseEntity<?> updateInfoUser(String userId, AdminUpdateUserRequest userRequest) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (userRequest.getUsername() != null) {
+            user.setUsername(userRequest.getUsername());
+        }
+        if (userRequest.getEmail() != null) {
+            user.setEmail(userRequest.getEmail());
+        }
+        userRepository.save(user);
+        return ResponseEntity.ok("User info updated successfully");
     }
 }

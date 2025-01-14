@@ -233,4 +233,13 @@ public class MessageService {
                 .toList();
         return ResponseEntity.ok(conversationResponses);
     }
+
+    public ResponseEntity<?> getConversationByUserId(String userId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        PersonalConversation conversations = personalConversationRepository.findByUserIds(currentUser.getId(), user.getId()).orElseThrow(() -> new RuntimeException("Conversation not found"));
+        ConversationResponse conversationResponse = new ConversationResponse().toDto(conversations, currentUser.getId(), profileResponseBuilder);
+        return ResponseEntity.ok(conversationResponse);
+    }
 }

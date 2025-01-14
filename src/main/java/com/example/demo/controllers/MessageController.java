@@ -79,6 +79,15 @@ public class MessageController {
         }
     }
 
+    @GetMapping("/conversations/{userId}")
+    public ResponseEntity<?> getConversationByUserId(@PathVariable String userId) {
+        try {
+            return messageService.getConversationByUserId(userId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/pending/conversations")
     public ResponseEntity<?> getPendingConversations() {
         try {
