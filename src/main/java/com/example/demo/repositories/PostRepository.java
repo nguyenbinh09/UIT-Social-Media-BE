@@ -26,8 +26,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.isDeleted = false")
     List<Post> findByGroupIdAndIsDeleted(Long groupId, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.user.id = :id AND p.isDeleted = false")
+    @Query("SELECT p FROM Post p WHERE p.user.id = :id AND p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
     List<Post> findByUserId(String id, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.user.id = :id AND p.isDeleted = false AND p.status = 'APPROVED'")
+    List<Post> findByCurrentUserId(String id, Pageable pageable);
 
     List<Post> findByStatus(PostStatus postStatus, Pageable pageable);
 
