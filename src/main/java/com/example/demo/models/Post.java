@@ -74,7 +74,7 @@ public class Post extends BaseModel {
     @Column(name = "status")
     private PostStatus status;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by")
     private User reviewedBy;
 

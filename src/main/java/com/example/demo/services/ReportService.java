@@ -97,7 +97,7 @@ public class ReportService {
             warning.setActionUrl(actionUrl);
             notificationRepository.save(warning);
 
-//        firebaseService.pushNotificationToUser(warning, postOwner);
+            firebaseService.pushNotificationToUser(warning, postOwner);
             if (postOwner.getFcmToken() != null && !postOwner.getId().equals(currentUser.getId())) {
                 Map<String, String> dataPayload = Map.of(
                         "type", NotificationType.WARNING.name(),
@@ -137,7 +137,7 @@ public class ReportService {
         warning.setActionUrl(actionUrl);
         notificationRepository.save(warning);
 
-//        firebaseService.pushNotificationToUser(warning, postOwner);
+        firebaseService.pushNotificationToUser(warning, postOwner);
         if (postOwner.getFcmToken() != null && !postOwner.getId().equals(currentUser.getId())) {
             Map<String, String> dataPayload = Map.of(
                     "type", NotificationType.WARNING.name(),
