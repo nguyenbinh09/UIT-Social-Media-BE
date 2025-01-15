@@ -157,7 +157,8 @@ public class PostService {
             for (String followerId : followerIds) {
                 User follower = profileService.getUserWithProfile(userRepository.findById(followerId).orElseThrow(() -> new RuntimeException("Follower not found")));
                 String title = currentUser.getUsername() + " created a new post";
-                String message = savedPost.getTitle();
+                String message = "Check out " + currentUser.getUsername() + "'s new post: " + savedPost.getTextContent();
+                ;
                 Profile profile = profileService.getProfileByUser(currentUser);
                 String avatar = profile.getProfileAvatar().getUrl();
 
@@ -169,7 +170,7 @@ public class PostService {
                 notification.setActionUrl("/posts/" + savedPost.getId());
                 notificationRepository.save(notification);
 
-//                firebaseService.pushNotificationToUser(notification, follower);
+                firebaseService.pushNotificationToUser(notification, follower);
 
                 if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
                     Map<String, String> dataPayload = Map.of(
@@ -570,7 +571,7 @@ public class PostService {
         User postOwner = profileService.getUserWithProfile(savedPost.getUser());
 
         String postOwnerTitle = "Amin approved your post";
-        String postOwnerMessage = savedPost.getTitle();
+        String postOwnerMessage = "Your post has been approved. It is now visible to other users.";
         String adminAvatar = "https://firebasestorage.googleapis.com/v0/b/uit-social-network-f592d.appspot.com/o/admin-avatar.jpg?alt=media&token=91551f76-4094-42de-b3c4-2ceb0622e812";
 
         Notification postOwnernotification = new Notification();
@@ -597,7 +598,7 @@ public class PostService {
         for (String followerId : followerIds) {
             User follower = profileService.getUserWithProfile(userRepository.findById(followerId).orElseThrow(() -> new RuntimeException("Follower not found")));
             String title = postOwner.getUsername() + " created a new post";
-            String message = savedPost.getTitle();
+            String message = "Check out " + postOwner.getUsername() + "'s new post: " + savedPost.getTextContent();
             Profile profile = profileService.getProfileByUser(postOwner);
             String avatar = profile.getProfileAvatar().getUrl();
 
