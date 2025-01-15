@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -63,8 +64,19 @@ public class JWTService {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        try {
+            Claims claims = extractAllClaims(token);
+            String username = claims.getSubject();
+            Date expiration = claims.getExpiration();
+
+            if (expiration.before(new Date())) {
+                throw new ExpiredJwtException(null, claims, "JWT has expired");
+            }
+
+            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception ex) {
+            throw new RuntimeException("Invalid JWT token", ex);
+        }
     }
 
     private Boolean isTokenExpired(String token) {

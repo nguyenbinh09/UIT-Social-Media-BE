@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
+import java.net.ContentHandler;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,4 +33,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.status = :postStatus AND p.updatedAt < :threshold")
     List<Post> findAllByStatusAndUpdatedAtBefore(PostStatus postStatus, LocalDateTime threshold);
+
+    @Query("SELECT p FROM Post p JOIN p.topics t WHERE t.id = :topicId AND p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
+    List<Post> findByTopicId(@Param("topicId") Long topicId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
+    List<Post> findAllWithStatus(Pageable pageable);
 }
