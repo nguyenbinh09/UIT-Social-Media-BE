@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/topics")
 @AllArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
 public class TopicController {
     private final TopicService topicService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/createTopic")
     public ResponseEntity<?> createTopic(@RequestBody CreateTopicRequest createTopicRequest) {
         try {
@@ -43,6 +43,7 @@ public class TopicController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/updateTopic/{id}")
     public ResponseEntity<?> updateTopic(@PathVariable Long id, @RequestBody CreateTopicRequest createTopicRequest) {
         try {
@@ -52,6 +53,7 @@ public class TopicController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/deleteTopic/{id}")
     public ResponseEntity<?> deleteTopic(@PathVariable Long id) {
         try {
