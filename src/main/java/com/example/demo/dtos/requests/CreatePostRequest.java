@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -13,4 +15,5 @@ public class CreatePostRequest {
     private String title;
     private Long privacyId;
     private String link;
+    private List<Long> topicIds;
 }

@@ -4,6 +4,7 @@ import com.example.demo.enums.PostStatus;
 import com.example.demo.enums.ReactionTypeName;
 import com.example.demo.models.MediaFile;
 import com.example.demo.models.Post;
+import com.example.demo.models.Topic;
 import com.example.demo.services.ProfileResponseBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +35,7 @@ public class PostResponse {
     private PostStatus status;
     private int reactionCount;
     private int commentCount;
+    private List<String> topics;
 
     public PostResponse toDTO(Post post, ProfileResponseBuilder profileResponseBuilder) {
         this.setId(post.getId());
@@ -50,6 +52,7 @@ public class PostResponse {
         this.setCreatedAt(post.getCreatedAt());
         this.setStatus(post.getStatus());
         this.setLink(post.getLink());
+        this.setTopics(post.getTopics().stream().map(Topic::getName).collect(Collectors.toList()));
         if (post.getIsShared())
             this.setSharedPost(new PostResponse().toDTO(post.getSharedPost(), profileResponseBuilder));
         return this;

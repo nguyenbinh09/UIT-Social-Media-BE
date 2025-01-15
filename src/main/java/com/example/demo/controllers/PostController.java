@@ -164,4 +164,13 @@ public class PostController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/getPostsByTopic")
+    public ResponseEntity<?> getPostsByTopic(@RequestParam Long topicId, @RequestParam int page, @RequestParam int size) {
+        try {
+            return postService.getPostsByTopic(topicId, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

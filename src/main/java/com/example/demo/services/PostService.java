@@ -49,6 +49,7 @@ public class PostService {
     private final ProfileService profileService;
     private final ProfileResponseBuilder profileResponseBuilder;
     private final RestTemplate restTemplate;
+    private final TopicRepository topicRepository;
 
     public PostService(PostRepository postRepository,
                        FirebaseService firebaseService,
@@ -64,7 +65,8 @@ public class PostService {
                        NotificationRepository notificationRepository,
                        ProfileService profileService,
                        ProfileResponseBuilder profileResponseBuilder,
-                       RestTemplate restTemplate) {
+                       RestTemplate restTemplate,
+                       TopicRepository topicRepository) {
         this.postRepository = postRepository;
         this.firebaseService = firebaseService;
         this.followRepository = followRepository;
@@ -80,6 +82,7 @@ public class PostService {
         this.profileService = profileService;
         this.profileResponseBuilder = profileResponseBuilder;
         this.restTemplate = restTemplate;
+        this.topicRepository = topicRepository;
     }
 
     @Value("${uit-model.url}")
@@ -91,7 +94,7 @@ public class PostService {
 //        String followerId = currentUser.getId();
 //        List<String> userIds = followRepository.findFollowedIdsByFollowerId(followerId);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        List<Post> posts = postRepository.findAll(pageable).getContent();
+        List<Post> posts = postRepository.findAllWithStatus(pageable);
 //        List<Post> posts = postRepository.findByUserIdsAndIsDeletedAndPrivacy(userIds, pageable).getContent();
 
         List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
@@ -111,7 +114,13 @@ public class PostService {
 
         User currentUser = profileService.getUserWithProfile(user);
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
-
+        if (postRequest.getTopicIds().size() > 3) {
+            return ResponseEntity.badRequest().body("You can't select more than 3 topics");
+        }
+        List<Topic> topics = topicRepository.findAllById(postRequest.getTopicIds());
+        if (topics.isEmpty()) {
+            return ResponseEntity.badRequest().body("Invalid topics");
+        }
         String apiUrl = modelUrl + "/predict";
         Map<String, String> payload = Map.of("text", postRequest.getTextContent());
         ResponseEntity<ModerationResponse> response = restTemplate.postForEntity(
@@ -132,6 +141,7 @@ public class PostService {
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
+        post.setTopics(topics);
         post.setLink(postRequest.getLink());
         post.setStatus(isClean ? PostStatus.APPROVED : PostStatus.PENDING);
         Post savedPost = postRepository.save(post);
@@ -159,7 +169,7 @@ public class PostService {
                 notification.setActionUrl("/posts/" + savedPost.getId());
                 notificationRepository.save(notification);
 
-                firebaseService.pushNotificationToUser(notification, follower);
+//                firebaseService.pushNotificationToUser(notification, follower);
 
                 if (follower.getFcmToken() != null && !follower.getId().equals(currentUser.getId())) {
                     Map<String, String> dataPayload = Map.of(
@@ -677,5 +687,20 @@ public class PostService {
         LocalDateTime threshold = LocalDateTime.now().minusDays(30);
         List<Post> postsToDelete = postRepository.findAllByStatusAndUpdatedAtBefore(PostStatus.REJECTED, threshold);
         postRepository.deleteAll(postsToDelete);
+    }
+
+    public ResponseEntity<?> getPostsByTopic(Long topicId, int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Post> posts = postRepository.findByTopicId(topicId, pageable);
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
+        Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
+        for (PostReaction reaction : reactions) {
+            reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
+        }
+        return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
     }
 }

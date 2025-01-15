@@ -32,8 +32,13 @@ public class Post extends BaseModel {
     @Column(name = "title")
     private String title;
 
-//    @Column(name = "topic")
-//    private String topic;
+    @ManyToMany
+    @JoinTable(
+            name = "post_topic",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "topic_id")
+    )
+    private List<Topic> topics = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "privacy_id")
