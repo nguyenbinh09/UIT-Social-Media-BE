@@ -447,7 +447,7 @@ public class PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        List<Post> posts = postRepository.findByUserId(currentUser.getId(), pageable);
+        List<Post> posts = postRepository.findByCurrentUserId(currentUser.getId(), pageable);
 
         List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
 
