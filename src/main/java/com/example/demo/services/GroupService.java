@@ -321,7 +321,7 @@ public class GroupService {
         if (!adminMembership.getRole().equals(RoleName.ADMIN)) {
             return ResponseEntity.badRequest().body("You are not the admin of this group");
         }
-        Optional<GroupMembership> existingMember = groupMembershipRepository.findByUserIdAndGroupId(user.getId(), group.getId());
+        Optional<GroupMembership> existingMember = groupMembershipRepository.findByUserIdAndGroupId(invitee.getId(), group.getId());
         if (existingMember.isPresent()) {
             return ResponseEntity.badRequest().body("User is already a member of this group");
         }
