@@ -15,7 +15,6 @@ public class GroupResponse {
     private String name;
     private String description;
 
-
     public GroupResponse toDTO(Group group) {
         GroupResponse groupResponse = new GroupResponse();
         groupResponse.setId(group.getId());

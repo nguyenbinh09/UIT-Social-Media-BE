@@ -205,7 +205,7 @@ public class ProfileService {
         User currentUser = (User) authentication.getPrincipal();
         Profile profile = getProfileByRole(currentUser);
 
-        if (currentUser.getRole().getName().equals(RoleName.STUDENT)) {
+        if (currentUser.getRole().getName().equals(RoleName.STUDENT) && updateProfileRequest.getStudent() != null) {
             if (updateProfileRequest.getStudent().getStudentCode() != null) {
                 profile.getStudent().setStudentCode(updateProfileRequest.getStudent().getStudentCode());
             }
@@ -218,7 +218,7 @@ public class ProfileService {
             if (updateProfileRequest.getStudent().getYearOfAdmission() != null) {
                 profile.getStudent().setYearOfAdmission(updateProfileRequest.getStudent().getYearOfAdmission());
             }
-        } else if (currentUser.getRole().getName().equals(RoleName.LECTURER)) {
+        } else if (currentUser.getRole().getName().equals(RoleName.LECTURER) && updateProfileRequest.getLecturer() != null) {
             if (updateProfileRequest.getLecturer().getLecturerCode() != null) {
                 profile.getLecturer().setLecturerCode(updateProfileRequest.getLecturer().getLecturerCode());
             }
