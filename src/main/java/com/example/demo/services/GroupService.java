@@ -4,6 +4,7 @@ import com.example.demo.dtos.requests.CreateGroupRequest;
 import com.example.demo.dtos.requests.UpdateGroupRequest;
 import com.example.demo.dtos.responses.GroupMembershipRequestResponse;
 import com.example.demo.dtos.responses.GroupResponse;
+import com.example.demo.dtos.responses.InvitationResponse;
 import com.example.demo.dtos.responses.UserResponse;
 import com.example.demo.enums.InvitationStatus;
 import com.example.demo.enums.MembershipRequestStatus;
@@ -489,7 +490,7 @@ public class GroupService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         List<Invitation> invitations = invitationRepository.findByInviteeId(currentUser.getId());
-        List<GroupResponse> groupList = invitations.stream().map(invitation -> new GroupResponse().toDTO(invitation.getGroup())).toList();
-        return ResponseEntity.ok(groupList);
+        List<InvitationResponse> invitationList = new InvitationResponse().mapInvitationsToDTOs(invitations, profileResponseBuilder);
+        return ResponseEntity.ok(invitationList);
     }
 }
