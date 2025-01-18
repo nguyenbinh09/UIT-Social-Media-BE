@@ -193,4 +193,17 @@ public class ChatGroupService {
                 .toList();
         return ResponseEntity.ok(memberResponses);
     }
+
+    public ResponseEntity<?> getChatGroupById(Long chatGroupId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+
+        ChatGroupMember chatGroupMember = chatGroupMemberRepository.findByChatGroupIdAndUserId(chatGroupId, currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+        ChatGroup chatGroup = chatGroupRepository.findById(chatGroupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        ChatGroupResponse chatGroupResponse = new ChatGroupResponse().toDto(chatGroup);
+        return ResponseEntity.ok(chatGroupResponse);
+    }
 }
