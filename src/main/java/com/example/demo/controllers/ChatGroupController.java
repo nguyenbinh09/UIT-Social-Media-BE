@@ -70,6 +70,15 @@ public class ChatGroupController {
         }
     }
 
+    @GetMapping("/getChatGroupById/{chatGroupId}")
+    public ResponseEntity<?> getChatGroupById(@PathVariable Long chatGroupId) {
+        try {
+            return chatGroupService.getChatGroupById(chatGroupId);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/{chatGroupId}/getMembers")
     public ResponseEntity<?> getMembers(@PathVariable Long chatGroupId) {
         try {
