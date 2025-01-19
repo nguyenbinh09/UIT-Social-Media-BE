@@ -30,6 +30,7 @@ public class ChatGroupService {
     private final UserRepository userRepository;
     private final MediaFileService mediaFileService;
     private final ChatGroupMemberRepository chatGroupMemberRepository;
+    private final ProfileResponseBuilder profileResponseBuilder;
 
     @Transactional
     public ResponseEntity<?> createChatGroup(CreateChatGroupRequest createChatGroupRequest) {
@@ -167,7 +168,7 @@ public class ChatGroupService {
         User currentUser = (User) authentication.getPrincipal();
         List<ChatGroup> chatGroups = chatGroupRepository.findChatGroupsWithLatestMessages(currentUser.getId());
         List<ChatGroupResponse> chatGroupResponses = chatGroups.stream()
-                .map(chatGroup -> new ChatGroupResponse().toDto(chatGroup))
+                .map(chatGroup -> new ChatGroupResponse().toDto(chatGroup, profileResponseBuilder))
                 .toList();
 
         return ResponseEntity.ok(chatGroupResponses);
@@ -203,7 +204,7 @@ public class ChatGroupService {
         ChatGroup chatGroup = chatGroupRepository.findById(chatGroupId)
                 .orElseThrow(() -> new IllegalArgumentException("Group not found"));
 
-        ChatGroupResponse chatGroupResponse = new ChatGroupResponse().toDto(chatGroup);
+        ChatGroupResponse chatGroupResponse = new ChatGroupResponse().toDto(chatGroup, profileResponseBuilder);
         return ResponseEntity.ok(chatGroupResponse);
     }
 }
