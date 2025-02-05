@@ -8,5 +8,4 @@ import lombok.Data;
 public class AdminUpdateUserRequest {
     private String username;
     private String email;
-    
 }

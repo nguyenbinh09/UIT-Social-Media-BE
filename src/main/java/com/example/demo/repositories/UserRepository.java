@@ -50,4 +50,6 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u FROM User u WHERE (:role IS NULL OR u.role.name = :role)")
     Page<User> findByRole(@Param("role") RoleName role, Pageable pageable);
+
+    Optional<User> findFirstByRoleName(RoleName roleName);
 }

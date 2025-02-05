@@ -191,8 +191,9 @@ public class PostService {
         User currentUser = (User) authentication.getPrincipal();
         Post post = postRepository.findById(postRequest.getId()).orElseThrow(() -> new RuntimeException("Post not found"));
         updatePost(post, postRequest, mediaFiles, currentUser);
-        postRepository.save(post);
-        return ResponseEntity.ok().body("Post updated successfully");
+        Post savedPost = postRepository.save(post);
+        PostResponse postResponse = new PostResponse().toDTO(savedPost, profileResponseBuilder);
+        return ResponseEntity.ok().body(postResponse);
     }
 
     public void updatePost(Post post, UpdatePostRequest postRequest, List<MultipartFile> mediaFiles, User currentUser) {
@@ -283,7 +284,7 @@ public class PostService {
                 }
             }
         }
-        return ResponseEntity.ok().body("Post created successfully");
+        return ResponseEntity.ok().body(new PostResponse().toDTO(savedPost, profileResponseBuilder));
     }
 
     @Transactional

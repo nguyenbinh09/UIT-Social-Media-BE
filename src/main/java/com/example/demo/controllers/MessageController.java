@@ -106,4 +106,14 @@ public class MessageController {
         }
     }
 
+//    @PostMapping("assistant/send")
+//    public ResponseEntity<?> sendMessageToAdmin(@RequestParam String sendAssistantMessageString, @RequestPart(required = false) List<MultipartFile> mediaFiles) {
+//        try {
+//            SendMessageRequest sendMessageRequest = objectMapper.readValue(sendAssistantMessageString, SendMessageRequest.class);
+//            return messageService.sendMessageToAdmin(sendMessageRequest, mediaFiles);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
+
 }
