@@ -1,32 +1,26 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.AccountStatusRequest;
+import com.example.demo.dtos.requests.AdminRegisterRequest;
 import com.example.demo.dtos.requests.AdminUpdateUserRequest;
-import com.example.demo.dtos.responses.CommentResponse;
-import com.example.demo.dtos.responses.PendingPostResponse;
-import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.dtos.responses.UserResponse;
-import com.example.demo.enums.PostStatus;
+import com.example.demo.enums.AccountStatus;
 import com.example.demo.enums.RoleName;
-import com.example.demo.models.Post;
-import com.example.demo.models.User;
-import com.example.demo.repositories.PostRepository;
-import com.example.demo.repositories.UserRepository;
+import com.example.demo.models.*;
+import com.example.demo.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.Response;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -35,6 +29,11 @@ public class UserService {
     private final ProfileService profileService;
     private final NotificationService notificationService;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final AdminRepository adminRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final ContactRepository contactRepository;
+    private final PermissionRepository permissionRepository;
 
     public ResponseEntity<?> getMe() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -85,5 +84,56 @@ public class UserService {
         }
         userRepository.save(user);
         return ResponseEntity.ok("User info updated successfully");
+    }
+
+    public ResponseEntity<?> registerAdmin(AdminRegisterRequest adminRegisterRequest) {
+        if (userRepository.existsByUsername(adminRegisterRequest.getUsername())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Username already exists.");
+        }
+        Role role = roleRepository.findByName(RoleName.ADMIN)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found"));
+        List<Permission> permissions = permissionRepository.findAllById(adminRegisterRequest.getPermissions());
+        if (permissions.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("You haven't provide any permissions or permissions not found.");
+        }
+        User user = new User();
+        user.setUsername(adminRegisterRequest.getUsername());
+        user.setPassword(passwordEncoder.encode(adminRegisterRequest.getPassword()));
+        user.setEmail(adminRegisterRequest.getEmail());
+        user.setRole(role);
+        userRepository.save(user);
+
+        Contact contact = new Contact();
+        contact.setEmailToContact(adminRegisterRequest.getEmail());
+        contact.setPhoneNumber(adminRegisterRequest.getPhone());
+        contact.setAddress(adminRegisterRequest.getAddress());
+        contactRepository.save(contact);
+
+        String adminCode = generateAdminCode();
+
+        Admin admin = new Admin();
+        admin.setUser(user);
+        admin.setAdminCode(adminCode);
+        admin.setPermissions(permissions);
+        admin.setContact(contact);
+        adminRepository.save(admin);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("Admin account created successfully.");
+    }
+
+    private String generateAdminCode() {
+        long adminCount = adminRepository.count();
+        long nextAdminCode = adminCount + 1;
+        return String.format("AD%04d", nextAdminCode);
+    }
+
+    public ResponseEntity<?> getFirstAdmin() {
+        User firstAdmin = userRepository.findFirstByRoleName(RoleName.ADMIN)
+                .orElseThrow(() -> new IllegalArgumentException("Admin not found"));
+        UserResponse userResponse = new UserResponse().toDTO(firstAdmin, profileResponseBuilder);
+        return ResponseEntity.ok(userResponse);
     }
 }

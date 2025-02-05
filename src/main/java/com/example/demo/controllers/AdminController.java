@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.dtos.requests.AccountStatusRequest;
+import com.example.demo.dtos.requests.AdminRegisterRequest;
 import com.example.demo.dtos.requests.AdminUpdateUserRequest;
 import com.example.demo.enums.PostStatus;
 import com.example.demo.services.PostService;
@@ -60,6 +61,15 @@ public class AdminController {
     public ResponseEntity<?> rejectPost(@PathVariable Long postId, @RequestBody String rejectionReason) {
         try {
             return postService.rejectPost(postId, PostStatus.REJECTED, rejectionReason);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/registerAdmin")
+    public ResponseEntity<?> registerAdmin(@RequestBody AdminRegisterRequest adminRegisterRequest) {
+        try {
+            return userService.registerAdmin(adminRegisterRequest);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

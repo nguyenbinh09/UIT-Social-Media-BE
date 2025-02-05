@@ -2,6 +2,7 @@ package com.example.demo.dtos.responses;
 
 import com.example.demo.models.Admin;
 import com.example.demo.models.Contact;
+import com.example.demo.models.Permission;
 import com.example.demo.models.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,7 @@ public class AdminResponse {
     public AdminResponse toDTO(Admin admin) {
         this.setId(admin.getId());
         this.setUserId(admin.getUser().getId());
-        this.setPermissions(admin.getPermissions());
+        this.setPermissions(admin.getPermissions().stream().map(Permission::getName).toList());
         this.setAdminCode(admin.getAdminCode());
         this.setContact(new ContactResponse().toDTO(admin.getContact()));
         return this;

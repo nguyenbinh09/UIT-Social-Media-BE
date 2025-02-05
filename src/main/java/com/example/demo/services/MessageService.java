@@ -36,6 +36,7 @@ public class MessageService {
     private final NotificationService notificationService;
     private final ProfileService profileService;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final AdminRepository adminRepository;
 
     @Transactional
     public ResponseEntity<?> sendOneToOneMessage(SendMessageRequest sendMessageRequest, List<MultipartFile> mediaFiles) {
@@ -242,4 +243,49 @@ public class MessageService {
         ConversationResponse conversationResponse = new ConversationResponse().toDto(conversations, currentUser.getId(), profileResponseBuilder);
         return ResponseEntity.ok(conversationResponse);
     }
+
+//    public ResponseEntity<?> sendMessageToAdmin(SendMessageRequest sendMessageRequest, List<MultipartFile> mediaFiles) {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        User currentUser = (User) authentication.getPrincipal();
+//
+//        if (currentUser.getStudent() == null) {
+//            return ResponseEntity.badRequest().body("Only students can send messages to admin.");
+//        }
+//
+//        Admin defaultAdmin = adminRepository.findFirstByOrderByIdAsc()
+//                .orElseThrow(() -> new RuntimeException("No admin found in the system."));
+//        User receiver = defaultAdmin.getUser();
+//
+//        PersonalConversation conversation = personalConversationRepository
+//                .findByUserIds(currentUser.getId(), receiver.getId())
+//                .orElseGet(() -> createConversation(currentUser, receiver, false));
+//
+//        Message message = new Message();
+//        message.setSender(currentUser);
+//        message.setReceiver(receiver);
+//        message.setContent(sendMessageRequest.getContent());
+//        message.setConversation(conversation);
+//
+//        Message savedMessage = messageRepository.save(message);
+//
+//        if (mediaFiles != null && !mediaFiles.isEmpty()) {
+//            savedMessage.setMediaFiles(mediaFileService.uploadMediaFile(savedMessage.getId(), FeedItemType.MESSAGE, mediaFiles));
+//        }
+//
+//        if (receiver.getFcmToken() != null) {
+//            String title = "New message from " + currentUser.getUsername();
+//            String messageNotify = "You have a new message from " + currentUser.getUsername() + ": " + sendMessageRequest.getContent();
+//            Profile profile = profileService.getProfileByUser(currentUser);
+//            String avatar = profile.getProfileAvatar().getUrl();
+//
+//            Map<String, String> dataPayload = Map.of(
+//                    "type", NotificationType.MESSAGE.name(),
+//                    "conversationId", conversation.getId().toString()
+//            );
+//            notificationService.sendNotification(receiver, title, messageNotify, avatar, dataPayload);
+//        }
+//
+//        return ResponseEntity.ok().body("Message sent to the default admin successfully.");
+//    }
+
 }

@@ -50,4 +50,13 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("getFirstAdmin")
+    public ResponseEntity<?> getFirstAdmin() {
+        try {
+            return userService.getFirstAdmin();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
