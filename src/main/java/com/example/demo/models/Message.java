@@ -21,7 +21,7 @@ public class Message extends BaseModel {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
+    @JoinColumn(name = "sender_id")
     private User sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,4 +45,7 @@ public class Message extends BaseModel {
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaFile> mediaFiles = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chatbot_conversation_id")
+    private ChatbotConversation chatbotConversation;
 }
