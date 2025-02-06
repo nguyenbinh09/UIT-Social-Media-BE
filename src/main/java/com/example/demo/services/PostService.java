@@ -239,20 +239,12 @@ public class PostService {
         Group group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
         GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
-        if (postRequest.getTopicIds().size() > 3) {
-            return ResponseEntity.badRequest().body("You can't select more than 3 topics");
-        }
-        List<Topic> topics = topicRepository.findAllById(postRequest.getTopicIds());
-        if (topics.isEmpty()) {
-            return ResponseEntity.badRequest().body("Invalid topics");
-        }
         Post post = new Post();
         post.setTitle(postRequest.getTitle());
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
         post.setGroup(group);
-        post.setTopics(topics);
         post.setLink(postRequest.getLink());
         if (groupMembership.getRole().equals(RoleName.ADMIN)) {
             post.setStatus(PostStatus.APPROVED);
