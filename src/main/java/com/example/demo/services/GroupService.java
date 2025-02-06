@@ -233,6 +233,10 @@ public class GroupService {
         Invitation invitation = invitationRepository.findById(invitationId).orElseThrow(() -> new RuntimeException("Invitation not found"));
         User inviter = profileService.getUserWithProfile(invitation.getInviter());
         Group group = groupRepository.findById(invitation.getGroup().getId()).orElseThrow(() -> new RuntimeException("Group not found"));
+        Optional<GroupMembership> existingMember = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), group.getId());
+        if (existingMember.isPresent()) {
+            return ResponseEntity.badRequest().body("User is already a member of this group");
+        }
         if (group.getIsDeleted().equals(true)) {
             return ResponseEntity.badRequest().body("Group is deleted");
         }
@@ -428,11 +432,13 @@ public class GroupService {
         if (group.getIsDeleted().equals(true)) {
             return ResponseEntity.badRequest().body("Group is deleted");
         }
-        GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), group.getId())
+        groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), group.getId())
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
         List<GroupMembership> members = groupMembershipRepository.findAllByGroupId(group.getId());
+        System.out.println(members.get(0).getId());
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<User> users = userRepository.findAllUsersByIdIn(members.stream().map(member -> member.getUser().getId()).toList(), pageable).getContent();
+        System.out.println(users.get(0).getUsername());
         List<UserResponse> memberList = new UserResponse().mapUsersToDTOs(users, profileResponseBuilder);
         return ResponseEntity.ok(memberList);
     }

@@ -5,6 +5,7 @@ import com.example.demo.dtos.requests.UpdateGroupRequest;
 import com.example.demo.enums.InvitationStatus;
 import com.example.demo.enums.MembershipRequestStatus;
 import com.example.demo.services.GroupService;
+import com.example.demo.services.PostService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class GroupController {
     private final GroupService groupService;
+    private final PostService postService;
 
     @PostMapping("/create")
     public ResponseEntity<?> createGroup(@RequestBody CreateGroupRequest createGroupRequest) {
@@ -86,6 +88,15 @@ public class GroupController {
     public ResponseEntity<?> getMembers(@PathVariable Long groupId, int page, int size) {
         try {
             return groupService.getMembers(groupId, page, size);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{groupId}/pendingPosts")
+    public ResponseEntity<?> getPendingGroupPosts(@PathVariable Long groupId, int page, int size) {
+        try {
+            return postService.getPendingGroupPosts(groupId, page, size);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

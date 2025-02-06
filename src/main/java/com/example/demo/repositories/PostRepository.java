@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.net.ContentHandler;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
@@ -23,7 +24,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findByGroupId(Long groupId, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.isDeleted = false")
+    @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
     List<Post> findByGroupIdAndIsDeleted(Long groupId, Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.user.id = :id AND p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
@@ -32,7 +33,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.user.id = :id AND p.isDeleted = false AND p.status = 'APPROVED'")
     List<Post> findByCurrentUserId(String id, Pageable pageable);
 
-    List<Post> findByStatus(PostStatus postStatus, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.status = :postStatus AND p.group.id IS NULL")
+    List<Post> findByStatusWithoutGroupId(@Param("postStatus") PostStatus postStatus, Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.status = :postStatus AND p.updatedAt < :threshold")
     List<Post> findAllByStatusAndUpdatedAtBefore(PostStatus postStatus, LocalDateTime threshold);
@@ -42,4 +44,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.isDeleted = false AND p.privacy.name = 'PUBLIC' AND p.status = 'APPROVED'")
     List<Post> findAllWithStatus(Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.isDeleted = false AND p.group.id IS NULL")
+    Optional<Post> findByIdWithoutGroupId(Long postId);
+
+    @Query("SELECT p FROM Post p WHERE p.status = :postStatus AND p.group.id = :groupId")
+    List<Post> findByStatusAndGroupId(PostStatus postStatus, Long groupId, Pageable pageable);
 }

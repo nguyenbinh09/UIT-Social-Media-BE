@@ -237,15 +237,28 @@ public class PostService {
         User currentUser = profileService.getUserWithProfile(user);
         Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
         Group group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
-        groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
+        GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
                 .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
-
+        if (postRequest.getTopicIds().size() > 3) {
+            return ResponseEntity.badRequest().body("You can't select more than 3 topics");
+        }
+        List<Topic> topics = topicRepository.findAllById(postRequest.getTopicIds());
+        if (topics.isEmpty()) {
+            return ResponseEntity.badRequest().body("Invalid topics");
+        }
         Post post = new Post();
         post.setTitle(postRequest.getTitle());
         post.setTextContent(postRequest.getTextContent());
         post.setUser(currentUser);
         post.setPrivacy(privacy);
         post.setGroup(group);
+        post.setTopics(topics);
+        post.setLink(postRequest.getLink());
+        if (groupMembership.getRole().equals(RoleName.ADMIN)) {
+            post.setStatus(PostStatus.APPROVED);
+        } else {
+            post.setStatus(PostStatus.PENDING);
+        }
         Post savedPost = postRepository.save(post);
 
         if (mediaFiles != null && !mediaFiles.isEmpty()) {
@@ -293,6 +306,9 @@ public class PostService {
         User user = (User) authentication.getPrincipal();
         User currentUser = profileService.getUserWithProfile(user);
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (!post.getStatus().equals(PostStatus.PENDING)) {
+            return ResponseEntity.badRequest().body("Post is already approved");
+        }
         User postOwner = profileService.getUserWithProfile(post.getUser());
         if (post.getIsDeleted().equals(true)) {
             return ResponseEntity.badRequest().body("Post is deleted");
@@ -370,9 +386,9 @@ public class PostService {
                     }
                 }
             }
-            post.setIsApproved(true);
+            post.setStatus(PostStatus.APPROVED);
         } else {
-            post.setIsApproved(false);
+            post.setStatus(PostStatus.REJECTED);
             String title = "Your post is rejected";
             String message = "Your post is rejected from " + group.getName() + " group";
             Profile profile = profileService.getProfileByUser(currentUser);
@@ -551,7 +567,22 @@ public class PostService {
 
     public ResponseEntity<?> getPendingPosts(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
-        List<Post> pendingPosts = postRepository.findByStatus(PostStatus.PENDING, pageable);
+        List<Post> pendingPosts = postRepository.findByStatusWithoutGroupId(PostStatus.PENDING, pageable);
+        List<PendingPostResponse> postResponses = new PendingPostResponse().mapPostsToDTOs(pendingPosts, profileResponseBuilder);
+        return ResponseEntity.ok(postResponses);
+    }
+
+    public ResponseEntity<?> getPendingGroupPosts(Long groupId, int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
+        GroupMembership groupMembership = groupMembershipRepository.findByUserIdAndGroupId(currentUser.getId(), groupId)
+                .orElseThrow(() -> new RuntimeException("You are not a member of this group"));
+        if (!groupMembership.getRole().equals(RoleName.ADMIN)) {
+            return ResponseEntity.badRequest().body("You don't have permission to view pending posts in this group");
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
+        List<Post> pendingPosts = postRepository.findByStatusAndGroupId(PostStatus.PENDING, group.getId(), pageable);
         List<PendingPostResponse> postResponses = new PendingPostResponse().mapPostsToDTOs(pendingPosts, profileResponseBuilder);
         return ResponseEntity.ok(postResponses);
     }
@@ -560,7 +591,7 @@ public class PostService {
     public ResponseEntity<?> approvePost(Long postId, PostStatus status) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByIdWithoutGroupId(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         if (status.equals(PostStatus.PENDING) || status.equals(PostStatus.REJECTED)) {
             return ResponseEntity.badRequest().body("Invalid post status");
         } else if (post.getStatus().equals(PostStatus.APPROVED)) {
@@ -629,7 +660,7 @@ public class PostService {
     public ResponseEntity<?> rejectPost(Long postId, PostStatus postStatus, String rejectionReason) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findByIdWithoutGroupId(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         if (postStatus.equals(PostStatus.PENDING) || postStatus.equals(PostStatus.APPROVED)) {
             return ResponseEntity.badRequest().body("Invalid post status");
         } else if (post.getStatus().equals(PostStatus.REJECTED)) {
