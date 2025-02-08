@@ -50,6 +50,7 @@ public class PostService {
     private final ProfileResponseBuilder profileResponseBuilder;
     private final RestTemplate restTemplate;
     private final TopicRepository topicRepository;
+    private final UserInteractionService userInteractionService;
 
     public PostService(PostRepository postRepository,
                        FirebaseService firebaseService,
@@ -66,7 +67,8 @@ public class PostService {
                        ProfileService profileService,
                        ProfileResponseBuilder profileResponseBuilder,
                        RestTemplate restTemplate,
-                       TopicRepository topicRepository) {
+                       TopicRepository topicRepository,
+                       UserInteractionService userInteractionService) {
         this.postRepository = postRepository;
         this.firebaseService = firebaseService;
         this.followRepository = followRepository;
@@ -83,6 +85,7 @@ public class PostService {
         this.profileResponseBuilder = profileResponseBuilder;
         this.restTemplate = restTemplate;
         this.topicRepository = topicRepository;
+        this.userInteractionService = userInteractionService;
     }
 
     @Value("${uit-model.url}")
@@ -420,6 +423,10 @@ public class PostService {
         Optional<PostReaction> postReaction = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId());
 
         PrivacyName privacy = post.getPrivacy().getName();
+        
+        if (!currentUser.getId().equals(post.getUser().getId())) {
+            userInteractionService.createUserInteraction(currentUser, post, InteractionType.VIEW);
+        }
 
         if (privacy.equals(PrivacyName.PUBLIC) || currentUser.getId().equals(post.getUser().getId())) {
             return postReaction.map(reaction -> ResponseEntity.ok(new PostResponse().toDTOWithReaction(post, reaction.getReactionType().getName(), profileResponseBuilder)))

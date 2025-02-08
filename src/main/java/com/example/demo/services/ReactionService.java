@@ -1,6 +1,7 @@
 package com.example.demo.services;
 
 import com.example.demo.dtos.requests.ReactPostRequest;
+import com.example.demo.enums.InteractionType;
 import com.example.demo.models.Post;
 import com.example.demo.models.PostReaction;
 import com.example.demo.models.ReactionType;
@@ -23,6 +24,7 @@ public class ReactionService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ReactionTypeRepository reactionTypeRepository;
+    private final UserInteractionService userInteractionService;
 
 
     @Transactional
@@ -41,7 +43,6 @@ public class ReactionService {
                 return ResponseEntity.ok("Reaction duplicated, no changes made");
             } else {
                 existingPostReaction.setReactionType(reactionType);
-                System.out.println(existingPostReaction.getReactionType().getId() + "  " + reactionType.getId());
                 postReactionRepository.save(existingPostReaction);
                 return ResponseEntity.ok("Reaction updated successfully");
             }
@@ -51,10 +52,12 @@ public class ReactionService {
             newPostReaction.setUser(currentUser);
             newPostReaction.setReactionType(reactionType);
             postReactionRepository.save(newPostReaction);
+            userInteractionService.createUserInteraction(currentUser, post, InteractionType.LIKE);
             return ResponseEntity.ok("Reaction created successfully");
         }
     }
 
+    @Transactional
     public ResponseEntity<?> deleteReaction(Long PostId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
@@ -62,6 +65,7 @@ public class ReactionService {
         PostReaction postReaction = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId())
                 .orElseThrow(() -> new RuntimeException("Reaction not found"));
         postReactionRepository.delete(postReaction);
+        userInteractionService.deleteUserInteraction(currentUser, post, InteractionType.LIKE);
         return ResponseEntity.ok("Reaction deleted successfully");
     }
 }

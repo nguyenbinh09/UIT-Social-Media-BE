@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.dtos.requests.CreateCommentRequest;
 import com.example.demo.dtos.responses.CommentResponse;
 import com.example.demo.enums.FeedItemType;
+import com.example.demo.enums.InteractionType;
 import com.example.demo.enums.NotificationType;
 import com.example.demo.models.*;
 import com.example.demo.repositories.*;
@@ -34,6 +35,7 @@ public class CommentService {
     private final FirebaseService firebaseService;
     private final ProfileService profileService;
     private final ProfileResponseBuilder profileResponseBuilder;
+    private final UserInteractionService userInteractionService;
 
     @Transactional
     public ResponseEntity<?> createComment(CreateCommentRequest commentRequest, List<MultipartFile> mediaFiles) {
@@ -48,6 +50,7 @@ public class CommentService {
         comment.setPost(post);
 
         Comment savedComment = commentRepository.save(comment);
+        userInteractionService.createUserInteraction(commenter, post, InteractionType.COMMENT);
 
         if (commentRequest.getParentId() != null) {
             Comment parentComment = commentRepository.findById(commentRequest.getParentId()).orElseThrow(() -> new RuntimeException("Parent comment not found"));
