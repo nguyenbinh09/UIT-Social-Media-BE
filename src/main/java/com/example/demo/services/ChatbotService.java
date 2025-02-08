@@ -6,6 +6,7 @@ import com.example.demo.models.Message;
 import com.example.demo.models.User;
 import com.example.demo.repositories.ChatbotConversationRepository;
 import com.example.demo.repositories.MessageRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -48,6 +49,7 @@ public class ChatbotService {
                 });
     }
 
+    @Transactional
     public ResponseEntity<?> sendMessageToChatbot(String content) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();

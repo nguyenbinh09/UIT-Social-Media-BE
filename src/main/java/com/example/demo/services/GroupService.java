@@ -56,6 +56,7 @@ public class GroupService {
         groupMembership.setUser(currentUser);
         groupMembership.setRole(RoleName.ADMIN);
         group.getMembers().add(groupMembership);
+        Group savedGroup = groupRepository.save(group);
         if (!createGroupRequest.getMembers().isEmpty()) {
             List<User> members = userRepository.findAllByIdIn(createGroupRequest.getMembers());
             for (User member : members) {
@@ -63,7 +64,7 @@ public class GroupService {
                 newGroupMembership.setGroup(group);
                 newGroupMembership.setUser(member);
                 newGroupMembership.setRole(RoleName.MEMBER);
-                group.getMembers().add(newGroupMembership);
+                savedGroup.getMembers().add(newGroupMembership);
 
                 if (!member.getId().equals(currentUser.getId())) {
                     String title = currentUser.getUsername() + " created a new post in  " + group.getName() + " group";
@@ -74,7 +75,7 @@ public class GroupService {
 
                     Notification notification = new Notification();
                     notification.setSender(currentUser);
-                    notification.setGroup(group);
+                    notification.setGroup(savedGroup);
                     notification.setReceiver(member);
                     notification.setType(NotificationType.GROUP_ADD_MEMBER);
                     notification.setMessage(message);
@@ -94,7 +95,7 @@ public class GroupService {
                 }
             }
         }
-        groupRepository.save(group);
+        groupRepository.save(savedGroup);
         return ResponseEntity.ok("Group created successfully");
     }
 
