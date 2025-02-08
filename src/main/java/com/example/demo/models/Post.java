@@ -80,6 +80,9 @@ public class Post extends BaseModel {
 
     @Column(name = "rejectionReason")
     private String rejectionReason;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserInteraction> interactions = new ArrayList<>();
 }
 
 

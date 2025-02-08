@@ -70,6 +70,9 @@ public class User extends BaseModel implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SavedPost> savedPosts = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserInteraction> interactions = new ArrayList<>();
+
     public User(String username, String password, String email) {
         this.username = username;
         this.password = password;

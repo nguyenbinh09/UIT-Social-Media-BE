@@ -4,6 +4,7 @@ import com.example.demo.dtos.requests.CreateTopicRequest;
 import com.example.demo.dtos.responses.TopicResponse;
 import com.example.demo.models.Topic;
 import com.example.demo.repositories.TopicRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class TopicService {
     private final TopicRepository topicRepository;
 
+    @Transactional
     public ResponseEntity<?> createTopic(CreateTopicRequest createTopicRequest) {
         if (topicRepository.findByName(createTopicRequest.getName()).isPresent()) {
             throw new RuntimeException("Topic already exists");
@@ -39,6 +41,7 @@ public class TopicService {
         return ResponseEntity.ok(topicResponse);
     }
 
+    @Transactional
     public ResponseEntity<?> updateTopic(Long id, CreateTopicRequest createTopicRequest) {
         Topic topic = topicRepository.findById(id).orElseThrow(() -> new RuntimeException("Topic not found"));
         if (topicRepository.findByName(createTopicRequest.getName()).isPresent()) {
