@@ -59,4 +59,14 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/getCountUsers")
+    public ResponseEntity<?> getCountUsers(@RequestParam RoleName role) {
+        try {
+            return ResponseEntity.ok(userService.getCountUsers(role));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

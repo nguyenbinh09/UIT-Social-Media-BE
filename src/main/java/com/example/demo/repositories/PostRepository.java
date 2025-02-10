@@ -50,4 +50,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.status = :postStatus AND p.group.id = :groupId")
     List<Post> findByStatusAndGroupId(PostStatus postStatus, Long groupId, Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.createdAt BETWEEN :startDate AND :endDate")
+    long countPostsBetweenDates(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
