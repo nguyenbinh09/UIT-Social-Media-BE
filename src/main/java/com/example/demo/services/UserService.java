@@ -136,4 +136,10 @@ public class UserService {
         UserResponse userResponse = new UserResponse().toDTO(firstAdmin, profileResponseBuilder);
         return ResponseEntity.ok(userResponse);
     }
+
+
+    public ResponseEntity<?> getCountUsers(RoleName role) {
+        long countUsers = userRepository.getCountUsers(role);
+        return ResponseEntity.ok(countUsers);
+    }
 }

@@ -52,4 +52,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     Page<User> findByRole(@Param("role") RoleName role, Pageable pageable);
 
     Optional<User> findFirstByRoleName(RoleName roleName);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE :roleName IS NULL OR u.role.name = :roleName")
+    long getCountUsers(@Param("roleName") RoleName roleName);
 }
