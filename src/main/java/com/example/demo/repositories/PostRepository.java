@@ -53,4 +53,37 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT COUNT(p) FROM Post p WHERE p.createdAt BETWEEN :startDate AND :endDate")
     long countPostsBetweenDates(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT p FROM Post p WHERE p.user.id IN " +
+            "(SELECT f.follower.id FROM Follow f WHERE f.followed.id = :userId " +
+            "AND f.follower.id IN (SELECT f2.followed.id FROM Follow f2 WHERE f2.follower.id = :userId)) " +
+            "AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    List<Post> findFriendPosts(@Param("userId") String userId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.user.id IN " +
+            "(SELECT f.followed.id FROM Follow f WHERE f.follower.id = :userId) " +
+            "AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    List<Post> findFollowedPosts(@Param("userId") String userId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.group.id IN " +
+            "(SELECT gm.group.id FROM GroupMembership gm WHERE gm.user.id = :userId) " +
+            "AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    List<Post> findGroupPosts(@Param("userId") String userId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p " +
+            "WHERE p.createdAt >= :time " +
+            "ORDER BY SIZE(p.reactions) DESC, p.createdAt DESC")
+    List<Post> findTrendingPosts(@Param("time") LocalDateTime time, Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Post p " +
+            "JOIN p.topics t " +
+            "WHERE t.id IN :topicIds " +
+            "ORDER BY p.createdAt DESC")
+    List<Post> findPostsByTopicIds(@Param("topicIds") List<Long> topicIds, Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Post p " +
+            "WHERE p.user.id IN :userIds " +
+            "ORDER BY p.createdAt DESC")
+    List<Post> findPostsByUserIds(@Param("userIds") List<String> userIds, Pageable pageable);
+
 }
