@@ -51,6 +51,7 @@ public class PostService {
     private final RestTemplate restTemplate;
     private final TopicRepository topicRepository;
     private final UserInteractionService userInteractionService;
+    private final UserInteractionRepository userInteractionRepository;
 
     public PostService(PostRepository postRepository,
                        FirebaseService firebaseService,
@@ -68,7 +69,8 @@ public class PostService {
                        ProfileResponseBuilder profileResponseBuilder,
                        RestTemplate restTemplate,
                        TopicRepository topicRepository,
-                       UserInteractionService userInteractionService) {
+                       UserInteractionService userInteractionService,
+                       UserInteractionRepository userInteractionRepository) {
         this.postRepository = postRepository;
         this.firebaseService = firebaseService;
         this.followRepository = followRepository;
@@ -86,6 +88,7 @@ public class PostService {
         this.restTemplate = restTemplate;
         this.topicRepository = topicRepository;
         this.userInteractionService = userInteractionService;
+        this.userInteractionRepository = userInteractionRepository;
     }
 
     @Value("${uit-model.url}")
@@ -94,21 +97,78 @@ public class PostService {
     public List<PostResponse> getPostFeed(int page, int size) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-//        String followerId = currentUser.getId();
-//        List<String> userIds = followRepository.findFollowedIdsByFollowerId(followerId);
+        String userId = currentUser.getId();
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        List<Post> posts = postRepository.findAllWithStatus(pageable);
-//        List<Post> posts = postRepository.findByUserIdsAndIsDeletedAndPrivacy(userIds, pageable).getContent();
 
-        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(currentUser.getId());
+        Set<Long> seenPostIds = new HashSet<>();
+        List<Post> finalPosts = new ArrayList<>();
 
-        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(currentUser.getId(), posts.stream().map(Post::getId).collect(Collectors.toList()));
+        List<Post> friendPosts = postRepository.findFriendPosts(userId, pageable);
+        for (Post post : friendPosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+        List<Post> followedPosts = postRepository.findFollowedPosts(userId, pageable);
+        for (Post post : followedPosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+        List<Post> groupPosts = postRepository.findGroupPosts(userId, pageable);
+        for (Post post : groupPosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+        List<Long> userInteractedTopicIds = userInteractionRepository.findTopicIdsByUserId(userId);
+        List<Post> topicBasedPosts = postRepository.findPostsByTopicIds(userInteractedTopicIds, pageable);
+        for (Post post : topicBasedPosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
+        List<Post> trendingPosts = postRepository.findTrendingPosts(oneWeekAgo, pageable);
+        for (Post post : trendingPosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+        List<String> similarUsers = userInteractionRepository.findSimilarUsers(userId);
+        List<Post> collaborativePosts = postRepository.findPostsByUserIds(similarUsers, pageable);
+        for (Post post : collaborativePosts) {
+            if (seenPostIds.add(post.getId())) {
+                finalPosts.add(post);
+            }
+        }
+
+//        List<Long> recommendedPostIds = recommendationService.getRecommendedPosts(userId);
+//        List<Post> recommendedPosts = postRepository.findByIdIn(recommendedPostIds);
+//        for (Post post : recommendedPosts) {
+//            if (seenPostIds.add(post.getId())) {
+//                finalPosts.add(post);
+//            }
+//        }
+
+        List<Long> savedPostIds = savedPostRepository.findPostIdsByUserId(userId);
+
+        List<PostReaction> reactions = postReactionRepository.findByUserIdAndPostIdIn(userId,
+                finalPosts.stream().map(Post::getId).collect(Collectors.toList()));
         Map<Long, ReactionTypeName> reactionTypeMap = new HashMap<>();
         for (PostReaction reaction : reactions) {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
-        return new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder);
+
+        return new PostResponse().mapPostsToDTOs(finalPosts, reactionTypeMap, savedPostIds, profileResponseBuilder);
     }
+
 
     @Transactional
     public ResponseEntity<?> createPost(CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
@@ -423,7 +483,7 @@ public class PostService {
         Optional<PostReaction> postReaction = postReactionRepository.findByPostIdAndUserId(post.getId(), currentUser.getId());
 
         PrivacyName privacy = post.getPrivacy().getName();
-        
+
         if (!currentUser.getId().equals(post.getUser().getId())) {
             userInteractionService.createUserInteraction(currentUser, post, InteractionType.VIEW);
         }
