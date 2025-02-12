@@ -55,4 +55,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE :roleName IS NULL OR u.role.name = :roleName")
     long getCountUsers(@Param("roleName") RoleName roleName);
+
+    @Query("SELECT u.id FROM User u WHERE u.role.name = :roleName")
+    List<String> findUserIdsByRole(RoleName roleName);
 }
