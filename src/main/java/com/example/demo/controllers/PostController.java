@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 @AllArgsConstructor
-@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER')")
+@PreAuthorize("hasRole('STUDENT') or hasRole('LECTURER') or hasRole('ADMIN')")
 @SecurityRequirement(name = "bearerAuth")
 public class PostController {
     private final PostService postService;
@@ -173,5 +173,5 @@ public class PostController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
 }
