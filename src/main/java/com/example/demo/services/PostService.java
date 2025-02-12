@@ -4,6 +4,7 @@ import com.example.demo.dtos.requests.CreatePostRequest;
 import com.example.demo.dtos.requests.SharePostRequest;
 import com.example.demo.dtos.requests.UpdatePostRequest;
 import com.example.demo.dtos.responses.ModerationResponse;
+import com.example.demo.dtos.responses.NotificationPostResponse;
 import com.example.demo.dtos.responses.PendingPostResponse;
 import com.example.demo.dtos.responses.PostResponse;
 import com.example.demo.enums.*;
@@ -794,5 +795,60 @@ public class PostService {
             reactionTypeMap.putIfAbsent(reaction.getPost().getId(), reaction.getReactionType().getName());
         }
         return ResponseEntity.ok(new PostResponse().mapPostsToDTOs(posts, reactionTypeMap, savedPostIds, profileResponseBuilder));
+    }
+
+    @Transactional
+    public ResponseEntity<?> createNotificationPost(CreatePostRequest postRequest, List<MultipartFile> mediaFiles) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+
+        if (currentUser.getRole().getName() != RoleName.ADMIN) {
+            return ResponseEntity.badRequest().body("You are not authorized to create a notification post");
+        }
+
+        Privacy privacy = privacyRepository.findById(postRequest.getPrivacyId()).orElseThrow(() -> new RuntimeException("Privacy not found"));
+        if (postRequest.getTopicIds().size() > 3) {
+            return ResponseEntity.badRequest().body("You can't select more than 3 topics");
+        }
+
+        List<Topic> topics = topicRepository.findAllById(postRequest.getTopicIds());
+        if (topics.isEmpty()) {
+            return ResponseEntity.badRequest().body("Invalid topics");
+        }
+
+        Post post = new Post();
+        post.setTitle(postRequest.getTitle());
+        post.setTextContent(postRequest.getTextContent());
+        post.setUser(currentUser);
+        post.setPrivacy(privacy);
+        post.setTopics(topics);
+        post.setLink(postRequest.getLink());
+        post.setStatus(PostStatus.APPROVED);
+        Post savedPost = postRepository.save(post);
+
+        if (mediaFiles != null && !mediaFiles.isEmpty()) {
+            savedPost.setMediaFiles(mediaFileService.uploadMediaFile(savedPost.getId(), FeedItemType.POST, mediaFiles));
+        }
+
+        List<String> userStudentIds = userRepository.findUserIdsByRole(RoleName.STUDENT);
+        List<User> users = userRepository.findAllUsersByIdIn(userStudentIds);
+
+        for (User user : users) {
+            if (!user.getId().equals(currentUser.getId())) {
+                String message = "Check out " + currentUser.getUsername() + "'s new post: " + savedPost.getTextContent();
+
+                Notification notification = new Notification();
+                notification.setSender(currentUser);
+                notification.setReceiver(user);
+                notification.setType(NotificationType.POST);
+                notification.setMessage(message);
+                notification.setActionUrl("/posts/" + savedPost.getId());
+                notificationRepository.save(notification);
+                
+                firebaseService.pushNotificationToUser(notification, user);
+            }
+        }
+        NotificationPostResponse postResponse = new NotificationPostResponse().toDTO(savedPost, profileResponseBuilder);
+        return ResponseEntity.ok().body(postResponse);
     }
 }

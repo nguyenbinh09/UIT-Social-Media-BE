@@ -35,10 +35,9 @@ public class UserResponse {
             userResponse.setStudent(new StudentResponse().toDTO(user.getStudent(), profileResponseBuilder));
         } else if (user.getRole().getName().equals(RoleName.LECTURER)) {
             userResponse.setLecturer(new LecturerResponse().toDTO(user.getLecturer(), profileResponseBuilder));
+        } else if (user.getRole().getName().equals(RoleName.ADMIN)) {
+            userResponse.setAdmin(new AdminResponse());
         }
-//        else if (user.getRole().getName().equals(RoleName.ADMIN)) {
-//            userResponse.setAdmin(new AdminResponse().toDTO(user.getAdmin()));
-//        }
         userResponse.setEmail(user.getEmail());
         userResponse.setRole(user.getRole().getName());
         userResponse.setAccountStatus(user.getAccountStatus());
